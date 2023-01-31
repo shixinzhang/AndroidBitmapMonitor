@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="top.shixinzhang.bitmapmonitor">
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <application>
+        <activity android:label="BitmapRecordList" android:name=".ui.BitmapRecordsActivity" android:launchMode="singleTask"/>
+        <activity android:label="BitmapRecordDetail" android:name=".ui.BitmapRecordDetailActivity" android:launchMode="singleTask"/>
+        <service android:name=".ui.FloatWindowService"/>
+    </application>
+</manifest>
