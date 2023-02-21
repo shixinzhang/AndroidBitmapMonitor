@@ -30,6 +30,7 @@ import top.shixinzhang.bitmapmonitor.fragment.LargeBitmapFragment;
 public class MainActivity extends AppCompatActivity {
 
     ViewPager viewPager;
+    final Handler H = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,12 +41,13 @@ public class MainActivity extends AppCompatActivity {
         SamplePagerAdapter adapter = new SamplePagerAdapter(getSupportFragmentManager());
 //        viewPager.setAdapter(adapter);
 
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+        H.postDelayed(new Runnable() {
             @Override
             public void run() {
-                BitmapMonitor.stop();
+//                BitmapMonitor.stop();
             }
-        }, 10_000);
+        }, 3_000);
+
 
         try {
             testCreateBitmap();
@@ -106,6 +108,18 @@ public class MainActivity extends AppCompatActivity {
         Bitmap logoBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.logo);
         Bitmap blockBitmap = getBlockBitmap(logoBitmap, logoBitmap.getWidth() / 20);
         imageView3.setImageBitmap(blockBitmap);
+
+
+        H.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    testCreateBitmap();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 3_000);
     }
 
     /**

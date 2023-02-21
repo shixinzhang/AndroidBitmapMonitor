@@ -99,10 +99,10 @@ public class BitmapMonitor {
         }
         if (show) {
             Context context = sConfig.context;
+            FloatWindow.show(context);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
                 Toast.makeText(context, "需要给悬浮窗权限才能实时查看图片内存数据", Toast.LENGTH_SHORT).show();
-            } else {
-                FloatWindow.show(context);
             }
         } else {
             FloatWindow.hide(sConfig.context);

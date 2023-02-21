@@ -34,7 +34,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:text="110Mb"
         android:textColor="#ffffff"
         android:fontFamily="sans-serif-medium"
         app:layout_constraintLeft_toLeftOf="parent"

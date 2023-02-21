@@ -30,7 +30,7 @@ public class MyApplication extends Application {
         super.attachBaseContext(base);
 
         //1.初始化
-        long checkInterval = 10;
+        long checkInterval = 5;
         long threshold = 100 * 1024;
         long restoreImageThreshold = 100 * 1024;;
         String dir = this.getExternalFilesDir("bitmap_monitor").getAbsolutePath();
@@ -55,7 +55,7 @@ public class MyApplication extends Application {
         });
 
         //3.开始监控
-        BitmapMonitor.start();
+//        BitmapMonitor.start();
         //开启，并提供页面获取接口
         BitmapMonitor.start(new BitmapMonitor.CurrentSceneProvider() {
             @Override
