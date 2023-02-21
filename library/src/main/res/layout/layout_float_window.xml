@@ -14,6 +14,7 @@
         android:layout_marginRight="2dp"
         android:padding="3dp"
         android:src="@mipmap/icon_close"
+        android:tint="#cccccc"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -22,10 +23,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="11 张"
+        android:textColor="#ffffff"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:fontFamily="cursive"
+        android:fontFamily="sans-serif-medium"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
@@ -34,6 +35,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="110Mb"
+        android:textColor="#ffffff"
         android:fontFamily="sans-serif-medium"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"

@@ -78,6 +78,8 @@ public class FloatWindowService extends Service implements BitmapMonitor.BitmapI
             return;
         }
 
+        removeView();
+
         floatView = LayoutInflater.from(this).inflate(R.layout.layout_float_window, null);
 
         bitmapCountTextView = floatView.findViewById(R.id.tv_bitmap_count);
@@ -201,8 +203,8 @@ public class FloatWindowService extends Service implements BitmapMonitor.BitmapI
             return;
         }
         Log.d("BitmapMonitor", "updateFloatViewUI: " + data);
-        bitmapCountTextView.setText(String.format(Locale.getDefault(),"%d/%d", data.remainBitmapCount, data.createBitmapCount));
-
+//        bitmapCountTextView.setText(String.format(Locale.getDefault(),"%d/%d", data.remainBitmapCount, data.createBitmapCount));
+        bitmapCountTextView.setText(String.format(Locale.getDefault(),"%d 张", data.remainBitmapCount));
 
         String remainBitmapMemorySize = data.getRemainBitmapMemorySizeWithFormat();
         memoryUsageTextView.setText(remainBitmapMemorySize);

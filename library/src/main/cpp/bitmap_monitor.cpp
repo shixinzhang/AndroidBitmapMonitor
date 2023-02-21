@@ -37,6 +37,7 @@ void record_bitmap_allocated(ptr_long native_ptr, jobject *bitmap_obj_weak_ref,
                              jstring &stacks,
                              jstring &current_scene) {
     if (android_bitmap_info == nullptr) {
+        LOGI("record_bitmap_allocated skipped, android_bitmap_info is null!");
         return;
     }
     long long allocation_byte_count = android_bitmap_info->stride * android_bitmap_info->height;
@@ -74,15 +75,14 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
                           int density) {
     SHADOWHOOK_STACK_SCOPE();
 
-    LOGI("create_bitmap_proxy called %p, g_get_stack_threshold: %ld, restore_image_threshold: %ld",
-         bitmap, g_get_stack_threshold, g_restore_image_threshold);
+    LOGI("create_bitmap_proxy s1");
 
     jobject bitmap_obj = SHADOWHOOK_CALL_PREV(create_bitmap_proxy, env, bitmap, bitmap_create_flags,
                                               nine_patch_chunk, nine_patch_insets, density);
 
     if (bitmap_obj == nullptr) {
         //Fail to create bitmap
-        LOGI(" create bitmap failed!");
+        LOGI(" s2 create bitmap failed!");
         return bitmap_obj;
     }
 
@@ -90,8 +90,7 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
     jfieldID native_ptr_field = env->GetFieldID(bitmap_jclass, "mNativePtr", "J");
     ptr_long native_ptr = env->GetLongField(bitmap_obj, native_ptr_field);
 
-    LOGI("createBitmapOrigin return, bitmap_obj address:  %p, native_ptr: %lld / %p", bitmap_obj,
-         native_ptr, native_ptr);
+    LOGI("create_bitmap_proxy s3");
 
     AndroidBitmapInfo android_bitmap_info{};
     int ret = AndroidBitmap_getInfo(env, bitmap_obj, &android_bitmap_info);
@@ -102,7 +101,7 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
     }
     int64_t allocation_byte_count = android_bitmap_info.stride * android_bitmap_info.height;
 
-    LOGI("allocation_byte_count %ld, g_get_stack_threshold: %ld", allocation_byte_count, g_get_stack_threshold);
+    LOGI("create_bitmap_proxy s4, allocation_byte_count %ld, g_get_stack_threshold: %ld", allocation_byte_count, g_get_stack_threshold);
 
     unsigned int bit_per_pixel = android_bitmap_info.stride / android_bitmap_info.width;
     uint32_t width = android_bitmap_info.width;
@@ -114,6 +113,7 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
 
         if (stack_jstring == nullptr) {
             //Fail to get java stacktrace
+            LOGI("create_bitmap_proxy s5, Fail to get java stacktrace");
             return bitmap_obj;
         }
     }
@@ -124,23 +124,29 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
     if (g_restore_image_threshold > 0 && allocation_byte_count >= g_restore_image_threshold && g_restore_image_dir != nullptr) {
         //read pixel and save to local storage
         void *pixels;
-        if (AndroidBitmap_lockPixels(env, bitmap_obj, &pixels) < 0) {
-            return bitmap_obj;
+        if (g_ctx.java_vm != nullptr) {
+            g_ctx.java_vm->AttachCurrentThread(&env, nullptr);
         }
-
-        long index = g_bitmap_write_index++;
-        int length = sprintf(copy_file_path, "%s/restore_%ld.bmp", g_restore_image_dir, index);
-        copy_file_path[length] = '\0';
-
-        convert_to_bgr((unsigned char *) pixels, height, width, bit_per_pixel);
-        write_bitmap_file(reinterpret_cast<unsigned char *>(pixels), height, width,
-                          copy_file_path, bit_per_pixel);
 
         save_to_local = true;
 
-        //为了减少内存使用，没有复制一份，所以上面的修改会导致颜色不对，这里再转回去
-        convert_bgr_to_rgba((unsigned char *) pixels, height, width, bit_per_pixel);
-        AndroidBitmap_unlockPixels(env, bitmap_obj);
+        if (AndroidBitmap_lockPixels(env, bitmap_obj, &pixels) == 0) {
+            long index = g_bitmap_write_index++;
+            int length = sprintf(copy_file_path, "%s/restore_%ld.bmp", g_restore_image_dir, index);
+            copy_file_path[length] = '\0';
+
+            convert_to_bgr((unsigned char *) pixels, height, width, bit_per_pixel);
+            write_bitmap_file(reinterpret_cast<unsigned char *>(pixels), height, width,
+                              copy_file_path, bit_per_pixel);
+
+            //为了减少内存使用，没有复制一份，所以上面的修改会导致颜色不对，这里再转回去
+            convert_bgr_to_rgba((unsigned char *) pixels, height, width, bit_per_pixel);
+            AndroidBitmap_unlockPixels(env, bitmap_obj);
+        } else {
+            LOGI("create_bitmap_proxy s6, Fail to lockPixels, %d", AndroidBitmap_lockPixels(env, bitmap_obj, &pixels));
+            int length = sprintf(copy_file_path, "Restore image failed, fail to lockPixels.");
+            copy_file_path[length] = '\0';
+        }
     }
 
     jobject bitmap_obj_weak_ref = env->NewWeakGlobalRef(bitmap_obj);
@@ -270,6 +276,7 @@ static void* thread_routine(void *) {
                                            .height = it->height,
                                            .stride =  it->stride,
                                            .format = it->format,
+                                           .time = it->time,
                                            .large_bitmap_save_path = it->large_bitmap_save_path,
                                            .java_bitmap_ref = it->java_bitmap_ref,
                                            .java_stack_jstring = it->java_stack_jstring,
@@ -403,6 +410,8 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
             jstring stacks = record.java_stack_jstring;
             jstring current_scene = record.current_scene;
 
+            LOGI("do_dump_info >>> time: %lld", record.time);
+
             //每一条记录
             jobject java_record = env->NewObject(
                     bitmap_record_class,
@@ -530,8 +539,5 @@ extern "C"
 JNIEXPORT jobject JNICALL
 Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapInfoNative(JNIEnv *env, jclass clazz) {
     LOGI("dumpBitmapInfoNative called, open ? %d", g_ctx.open_hook);
-//    if (!g_ctx.open_hook) {
-//        return nullptr;
-//    }
     return do_dump_info(env, false);
 }

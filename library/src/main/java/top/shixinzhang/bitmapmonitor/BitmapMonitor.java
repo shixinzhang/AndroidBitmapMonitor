@@ -1,7 +1,10 @@
 package top.shixinzhang.bitmapmonitor;
 
 import android.content.Context;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.bytedance.shadowhook.ShadowHook;
 
@@ -50,7 +53,9 @@ public class BitmapMonitor {
         int ret = ShadowHook.init();
         ShadowHook.setDebuggable(config.isDebug);
 
-        log("init called, ret:" + ret + config);
+        if (isDebug()) {
+            log("init called, ret:" + ret + config);
+        }
 
         return ret == 0;
     }
@@ -93,7 +98,12 @@ public class BitmapMonitor {
             return;
         }
         if (show) {
-            FloatWindow.show(sConfig.context);
+            Context context = sConfig.context;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+                Toast.makeText(context, "需要给悬浮窗权限才能实时查看图片内存数据", Toast.LENGTH_SHORT).show();
+            } else {
+                FloatWindow.show(context);
+            }
         } else {
             FloatWindow.hide(sConfig.context);
         }
@@ -150,15 +160,15 @@ public class BitmapMonitor {
 
         for (StackTraceElement s : st) {
             String fileName = s.getFileName();
-            boolean isInternalLogic = fileName != null && fileName.contains("top.shixinzhang.bitmapmonitor.ui");
-            // FIXME: 2023/1/31 删除这行 log
-            log("dumpJavaStack, isInternalLogic: " + isInternalLogic);
+            String className = s.getClassName();
+            boolean isInternalLogic = className != null && className.contains("top.shixinzhang.bitmapmonitor.ui");
+//            log("dumpJavaStack, isInternalLogic: " + isInternalLogic + ", " + className);
             if (isInternalLogic) {
-                //BitmapMonitor 展示图片数据时也会触发 bitmap create，需要过滤
+                //BitmapMonitor 展示图片数据时也会触发 bitmap create，需要过滤这部分调试数据
                 return null;
             }
             if (beginBusinessCode) {
-                sb.append("\tat ").append(s.getClassName()).append(".")
+                sb.append("\tat ").append(className).append(".")
                         .append(s.getMethodName())
                         .append("(").append(fileName)
                         .append(":").append(s.getLineNumber())
@@ -168,8 +178,10 @@ public class BitmapMonitor {
             }
         }
 
-        log("dumpJavaStack: " + Thread.currentThread().getName());
-        log("dumpJavaStack: " + sb.toString());
+        if (isDebug()) {
+            log("dumpJavaStack: " + Thread.currentThread().getName());
+            log("dumpJavaStack: " + sb.toString());
+        }
         return sb.toString();
     }
 
@@ -185,8 +197,12 @@ public class BitmapMonitor {
         return null;
     }
 
+    public static boolean isDebug() {
+        return sConfig != null && sConfig.isDebug;
+    }
+
     private static void log(String msg) {
-        if (sConfig == null || !sConfig.isDebug) {
+        if (!isDebug()) {
             return;
         }
         Log.d(TAG, msg);
@@ -294,11 +310,6 @@ public class BitmapMonitor {
 
             public Builder isDebug(boolean val) {
                 isDebug = val;
-                return this;
-            }
-
-            public Builder persistDataInDisk(boolean val) {
-                persistDataInDisk = val;
                 return this;
             }
 

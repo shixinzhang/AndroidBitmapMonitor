@@ -1,5 +1,6 @@
 package top.shixinzhang.bitmapmonitor.ui;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -11,8 +12,8 @@ import android.widget.TextView;
 
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -21,7 +22,7 @@ import top.shixinzhang.bitmapmonitor.BitmapRecord;
 import top.shixinzhang.bitmapmonitor.R;
 
 @Keep
-public class BitmapRecordDetailActivity extends AppCompatActivity {
+public class BitmapRecordDetailActivity extends Activity {
     public static final String IMAGE_RESTORE_DEFAULT = "图片大小没有达到阈值，因此没有还原为图片";
     public static final String STACK_TRACE_DEFAULT = "图片大小没有达到阈值，因此没有获取堆栈";
 
@@ -87,7 +88,9 @@ public class BitmapRecordDetailActivity extends AppCompatActivity {
             return;
         }
 
-        Bitmap bitmap = BitmapFactory.decodeFile(record.pictureExplorePath);
-        imageView.setImageBitmap(bitmap);
+        if (new File(record.pictureExplorePath).exists()) {
+            Bitmap bitmap = BitmapFactory.decodeFile(record.pictureExplorePath);
+            imageView.setImageBitmap(bitmap);
+        }
     }
 }

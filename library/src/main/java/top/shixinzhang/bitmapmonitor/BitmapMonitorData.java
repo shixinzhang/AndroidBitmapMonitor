@@ -13,11 +13,14 @@ import androidx.annotation.Keep;
  */
 @Keep
 public class BitmapMonitorData {
+    //历史创建的总图片数
     public long createBitmapCount;
-    //单位 byte
+    //历史创建的总图片内存大小，单位 byte
     public long createBitmapMemorySize;
 
+    //当前内存中还未回收的图片数
     public long remainBitmapCount;
+    //当前内存中还未回收的图片内存大小，单位 byte
     public long remainBitmapMemorySize;
 
     //泄漏（未释放）的 bitmap 数据

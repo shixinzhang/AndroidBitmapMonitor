@@ -29,24 +29,24 @@ public class MyApplication extends Application {
     protected void attachBaseContext(final Context base) {
         super.attachBaseContext(base);
 
-
+        //1.初始化
         long checkInterval = 10;
         long threshold = 100 * 1024;
         long restoreImageThreshold = 100 * 1024;;
         String dir = this.getExternalFilesDir("bitmap_monitor").getAbsolutePath();
 
         BitmapMonitor.Config config = new BitmapMonitor.Config.Builder()
-                .checkRecycleInterval(checkInterval)
-                .getStackThreshold(threshold)
-                .restoreImageThreshold(restoreImageThreshold)
-                .restoreImageDirectory(dir)
-                .showFloatWindow(true)
-                .persistDataInDisk(true)
+                .checkRecycleInterval(checkInterval)    //检查图片是否被回收的间隔，单位：秒 （建议不要太频繁，默认 5秒）
+                .getStackThreshold(threshold)           //获取堆栈的阈值，当一张图片占据的内存超过这个数值后就会去抓栈
+                .restoreImageThreshold(restoreImageThreshold)   //还原图片的阈值，当一张图占据的内存超过这个数值后，就会还原出一张原始图片
+                .restoreImageDirectory(dir)             //保存还原后图片的目录
+                .showFloatWindow(true)                  //是否展示悬浮窗，可实时查看内存大小（建议只在 debug 环境打开）
                 .isDebug(true)
                 .context(this)
                 .build();
         BitmapMonitor.init(config);
 
+        //2.注册数据监听
         BitmapMonitor.addListener(new BitmapMonitor.BitmapInfoListener() {
             @Override
             public void onBitmapInfoChanged(final BitmapMonitorData data) {
@@ -54,6 +54,9 @@ public class MyApplication extends Application {
             }
         });
 
+        //3.开始监控
+        BitmapMonitor.start();
+        //开启，并提供页面获取接口
         BitmapMonitor.start(new BitmapMonitor.CurrentSceneProvider() {
             @Override
             public String getCurrentScene() {
@@ -64,66 +67,17 @@ public class MyApplication extends Application {
             }
         });
 
-        BitmapMonitorData bitmapMonitorData = BitmapMonitor.dumpBitmapCount();
+        //4.停止
+//        BitmapMonitor.stop();
 
-        //用于清理内存
-        registerComponentCallbacks(new MemoryTrimCallback());
+        //5.主动 dump 数据
+        //获取所有数据
+        BitmapMonitorData bitmapAllData = BitmapMonitor.dumpBitmapInfo();
+        Log.d("bitmapmonitor", "bitmapAllData: " + bitmapAllData);
 
-        registerActivityLifecycleCallbacks(new MyActivityLifecycleCallbacks());
-    }
+        //仅获取数量和内存大小，不获取具体图片信息
+        BitmapMonitorData bitmapCountData = BitmapMonitor.dumpBitmapCount();
+        Log.d("bitmapmonitor", "bitmapCountData: " + bitmapCountData);
 
-    private class MyActivityLifecycleCallbacks implements ActivityLifecycleCallbacks {
-
-        @Override
-        public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
-
-        }
-
-        @Override
-        public void onActivityStarted(@NonNull Activity activity) {
-        }
-
-        @Override
-        public void onActivityResumed(@NonNull Activity activity) {
-            sCurrentActivity = activity;
-        }
-
-        @Override
-        public void onActivityPaused(@NonNull Activity activity) {
-
-        }
-
-        @Override
-        public void onActivityStopped(@NonNull Activity activity) {
-
-        }
-
-        @Override
-        public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {
-
-        }
-
-        @Override
-        public void onActivityDestroyed(@NonNull Activity activity) {
-
-        }
-    }
-
-    private static class MemoryTrimCallback implements ComponentCallbacks2 {
-
-        @Override
-        public void onTrimMemory(int level) {
-            if (level >= TRIM_MEMORY_MODERATE) {
-                // TODO: 2022/8/5 clear cache
-            }
-        }
-
-        @Override
-        public void onConfigurationChanged(Configuration newConfig) {}
-
-        @Override
-        public void onLowMemory() {
-            // TODO: 2022/8/5 降级策略
-        }
     }
 }

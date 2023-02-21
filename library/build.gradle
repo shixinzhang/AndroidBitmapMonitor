@@ -8,7 +8,7 @@ android {
     compileSdk 31
 
     defaultConfig {
-        minSdk 21
+        minSdk 19
         targetSdk 31
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -54,57 +54,59 @@ dependencies {
     implementation 'com.bytedance.android:shadowhook:1.0.3'
 }
 
-//publishing {
-//    publications {
-//        release(MavenPublication) {
-//            pom {
-//                name = 'AndroidBitmapMonitor'
-//                description = 'A bitmap memory monitor library for android development.'
-//                url = 'https://github.com/shixinzhang/AndroidBitmapMonitor'
-//
-//                licenses {
-//                    license {
-//                        name = 'The Apache License, Version 2.0'
-//                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-//                    }
-//                }
-//
-//                developers {
-//                    developer {
-//                        id = 'shixinzhang'
-//                        name = 'shixinzhang'
-//                        email = 'shixinzhang2016@gmail.com'
-//                    }
-//                }
-//
-//                scm {
-//                    connection = 'https://github.com/shixinzhang/AndroidBitmapMonitor.git'
-//                    developerConnection = 'https://github.com/shixinzhang/AndroidBitmapMonitor.git'
-//                    url = 'https://github.com/shixinzhang/AndroidBitmapMonitor'
-//                }
-//            }
-//
-//            groupId "io.github.shixinzhang"
-//            artifactId "android-bitmap-monitor"
-//            version "0.0.1"
-//
-//            afterEvaluate {
-//                from components.release
-//            }
-//        }
-//    }
-//    repositories {
-//        maven {
-//            url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-//            credentials {
-//                username ossrhUsername // ossrhUsername is your sonatype username
-//                password ossrhPassword // ossrhUsername is your sonatype password
-//            }
-//        }
-//    }
-//}
+println("uploadToMavenCentral:" + project.property("uploadToMavenCentral"))
+if (project.hasProperty("uploadToMavenCentral") && project.property("uploadToMavenCentral")) {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                pom {
+                    name = 'AndroidBitmapMonitor'
+                    description = 'A bitmap memory monitor library for android development.'
+                    url = 'https://github.com/shixinzhang/AndroidBitmapMonitor'
 
-// signing, this need key, secret, we put it into gradle.properties
-//signing {
-//    sign publishing.publications.release
-//}
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = 'shixinzhang'
+                            name = 'shixinzhang'
+                            email = 'shixinzhang2016@gmail.com'
+                        }
+                    }
+
+                    scm {
+                        connection = 'https://github.com/shixinzhang/AndroidBitmapMonitor.git'
+                        developerConnection = 'https://github.com/shixinzhang/AndroidBitmapMonitor.git'
+                        url = 'https://github.com/shixinzhang/AndroidBitmapMonitor'
+                    }
+                }
+
+                groupId "io.github.shixinzhang"
+                artifactId "android-bitmap-monitor"
+                version "1.0.3"
+
+                afterEvaluate {
+                    from components.release
+                }
+            }
+        }
+        repositories {
+            maven {
+                url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                credentials {
+                    username ossrhUsername // ossrhUsername is your sonatype username
+                    password ossrhPassword // ossrhUsername is your sonatype password
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.release
+    }
+}

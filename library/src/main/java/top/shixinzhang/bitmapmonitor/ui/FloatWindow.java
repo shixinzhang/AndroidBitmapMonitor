@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 
+import top.shixinzhang.bitmapmonitor.BitmapMonitor;
+
 public class FloatWindow {
     public static void show(Context context) {
         if (context == null) {
@@ -18,9 +20,13 @@ public class FloatWindow {
         }
 
         if (Settings.canDrawOverlays(context)) {
-            context.startService(new Intent(context, FloatWindowService.class));
+            Intent intent = new Intent(context, FloatWindowService.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startService(intent);
             return;
         }
+
+        hide(context);
 
         //申请悬浮窗权限
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + context.getPackageName()));

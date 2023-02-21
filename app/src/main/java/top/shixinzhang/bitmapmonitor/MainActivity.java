@@ -1,7 +1,5 @@
 package top.shixinzhang.bitmapmonitor;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
@@ -17,17 +15,30 @@ import android.os.Looper;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
 import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
+import top.shixinzhang.bitmapmonitor.fragment.LargeBitmapFragment;
+
 public class MainActivity extends AppCompatActivity {
+
+    ViewPager viewPager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        viewPager = findViewById(R.id.view_pager);
+        SamplePagerAdapter adapter = new SamplePagerAdapter(getSupportFragmentManager());
+//        viewPager.setAdapter(adapter);
 
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
@@ -179,5 +190,26 @@ public class MainActivity extends AppCompatActivity {
         blue = Math.round(blue / len);
 
         return Color.argb(0xff, red, green, blue);
+    }
+
+    private static class SamplePagerAdapter extends FragmentPagerAdapter {
+
+        public SamplePagerAdapter(@NonNull FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @NonNull
+        @Override
+        public Fragment getItem(int position) {
+            if (position == 0 || position == 1) {
+                return new LargeBitmapFragment();
+            }
+            return null;
+        }
     }
 }

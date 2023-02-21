@@ -55,4 +55,8 @@ public class BitmapRecord implements Serializable {
         int size = width * height * bitsPerPixel;
         return BitmapMonitorData.getFormatSize(size);
     }
+
+    public int getSize() {
+        return width * height * bitsPerPixel;
+    }
 }
