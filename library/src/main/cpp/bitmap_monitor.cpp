@@ -75,8 +75,6 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
                           int density) {
     SHADOWHOOK_STACK_SCOPE();
 
-    LOGI("create_bitmap_proxy s1");
-
     jobject bitmap_obj = SHADOWHOOK_CALL_PREV(create_bitmap_proxy, env, bitmap, bitmap_create_flags,
                                               nine_patch_chunk, nine_patch_insets, density);
 
@@ -90,8 +88,6 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
     jfieldID native_ptr_field = env->GetFieldID(bitmap_jclass, "mNativePtr", "J");
     ptr_long native_ptr = env->GetLongField(bitmap_obj, native_ptr_field);
 
-    LOGI("create_bitmap_proxy s3");
-
     AndroidBitmapInfo android_bitmap_info{};
     int ret = AndroidBitmap_getInfo(env, bitmap_obj, &android_bitmap_info);
     if (ret < 0) {
@@ -100,8 +96,6 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
         return bitmap_obj;
     }
     int64_t allocation_byte_count = android_bitmap_info.stride * android_bitmap_info.height;
-
-    LOGI("create_bitmap_proxy s4, allocation_byte_count %ld, g_get_stack_threshold: %ld", allocation_byte_count, g_get_stack_threshold);
 
     unsigned int bit_per_pixel = android_bitmap_info.stride / android_bitmap_info.width;
     uint32_t width = android_bitmap_info.width;
@@ -199,7 +193,6 @@ jobject create_bitmap_info_java_object(JNIEnv *env,
  * @return
  */
 static void* thread_routine(void *) {
-    LOGI("recycle_thread thread_routine called, open_hook ? %d", g_ctx.open_hook);
     if (g_ctx.java_vm == nullptr) {
         return nullptr;
     }
@@ -226,7 +219,6 @@ static void* thread_routine(void *) {
             sleep_some_time();
             continue;
         }
-        LOGI("loop check bitmap_records, size: %ld", g_ctx.bitmap_records.size());
         auto bitmap_records = g_ctx.bitmap_records;
         std::vector<BitmapRecord> copy_records;
 
@@ -240,18 +232,11 @@ static void* thread_routine(void *) {
         long long sum_bytes_alloc = 0;
         //遍历 java bitmap 对象，如果已经回收，移除记录
         for (auto it = bitmap_records.begin(); it != bitmap_records.end(); it++) {
-            LOGI(" check record, iterator: %p, java_bitmap_ref: %p, index: %d ,"
-                 "native_ptr: %lld, "
-                 " width: %d, height: %d ",
-                 it, it->java_bitmap_ref, index,
-                 it->native_ptr,
-                 it->width, it->height);
             index++;
             //1.判断 java 对象是否被回收
             jboolean object_recycled = env->IsSameObject(it->java_bitmap_ref, nullptr);
 
             if (object_recycled == JNI_TRUE) {
-                LOGI(" object_recycled, call remove record");
                 //被回收了，移除
                 continue;
             }
@@ -261,7 +246,6 @@ static void* thread_routine(void *) {
             //2.判断 bitmap 是否执行了 recycle()
             jboolean bitmap_recycled = env->CallBooleanMethod(bitmap_local_ref,
                                                               g_ctx.bitmap_recycled_method);
-            LOGI(" bitmap_recycled ? %d", bitmap_recycled);
             if (bitmap_recycled) {
                 //这个 Bitmap 调用了 recycle ，移除
                 env->DeleteLocalRef(bitmap_local_ref);
@@ -285,10 +269,6 @@ static void* thread_routine(void *) {
             env->DeleteLocalRef(bitmap_local_ref);
         }
 
-        LOGI("bitmap_records.size: %ld, copy_records.size: %ld, sum_bytes_alloc: %lld, sum_bytes_alloc_MB: %lld ",
-             bitmap_records.size(), copy_records.size(), sum_bytes_alloc,
-             sum_bytes_alloc / 1024 / 1024);
-
         if (copy_records.size() != bitmap_records.size()) {
             //少了一些，
             g_ctx.bitmap_records = copy_records;
@@ -305,8 +285,6 @@ static void* thread_routine(void *) {
 
         sleep_some_time();
     }
-
-    LOGI("loop thread finished");
 
     return nullptr;
 }
@@ -348,7 +326,6 @@ jint do_hook_bitmap(long bitmap_recycle_check_interval,
     auto so = api_level > API_LEVEL_10_0 ? BITMAP_CREATE_SYMBOL_SO_RUNTIME_AFTER_10 : BITMAP_CREATE_SYMBOL_SO_RUNTIME;
     auto symbol = api_level >= API_LEVEL_8_0 ?  BITMAP_CREATE_SYMBOL_RUNTIME : BITMAP_CREATE_SYMBOL_BEFORE_8;
     auto stub = shadowhook_hook_sym_name(so, symbol, (void *) create_bitmap_proxy,nullptr);
-    LOGI("hook createBitmap %p", stub);
 
     if (stub != nullptr) {
         g_ctx.open_hook = true;
@@ -368,7 +345,6 @@ jint do_hook_bitmap(long bitmap_recycle_check_interval,
                                                                         "reportBitmapInfo",
                                                                         "(Ltop/shixinzhang/bitmapmonitor/BitmapMonitorData;)V");
 
-            LOGI("bitmap_recycled_method : %p", g_ctx.bitmap_recycled_method);
         }
 
         //hook 成功后，开启一个线程，定时轮训当前保存的数据，如果发现有被 recycle 的，移出去，更新总体数据
@@ -409,8 +385,6 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
             jstring save_path = record.large_bitmap_save_path;
             jstring stacks = record.java_stack_jstring;
             jstring current_scene = record.current_scene;
-
-            LOGI("do_dump_info >>> time: %lld", record.time);
 
             //每一条记录
             jobject java_record = env->NewObject(
@@ -499,7 +473,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     g_ctx.get_current_scene_method = get_current_scene_method_id;
     g_ctx.inited = true;
 
-    LOGI("g_ctx inited");
     return  JNI_VERSION_1_6;
 }
 
@@ -518,7 +491,6 @@ Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_hookBitmapNative(JNIEnv *env, j
 extern "C"
 JNIEXPORT void JNICALL
 Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_stopHookBitmapNative(JNIEnv *env, jclass clazz) {
-    LOGI("stopHookBitmapNative called, open? %d", g_ctx.open_hook);
     g_ctx.open_hook = false;
     if (g_ctx.shadowhook_stub != nullptr) {
         shadowhook_unhook(g_ctx.shadowhook_stub);
@@ -528,7 +500,6 @@ Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_stopHookBitmapNative(JNIEnv *en
 extern "C"
 JNIEXPORT jobject JNICALL
 Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapCountNative(JNIEnv *env, jclass clazz) {
-    LOGI("dumpBitmapCountNative called, open? %d", g_ctx.open_hook);
     if (!g_ctx.open_hook) {
         return nullptr;
     }
@@ -538,6 +509,5 @@ Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapCountNative(JNIEnv *e
 extern "C"
 JNIEXPORT jobject JNICALL
 Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapInfoNative(JNIEnv *env, jclass clazz) {
-    LOGI("dumpBitmapInfoNative called, open ? %d", g_ctx.open_hook);
     return do_dump_info(env, false);
 }
