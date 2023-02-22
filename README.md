@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/Android-4.4%20--%2013-blue.svg?style=flat)
 ![](https://img.shields.io/badge/arch-armeabi--v7a%20%7C%20arm64--v8a-blue.svg?style=flat)
-![](https://img.shields.io/badge/release-1.0.2-red.svg?style=flat)
+![](https://img.shields.io/badge/release-1.0.7-red.svg?style=flat)
 
 **Android Bitmap Monitor** 是一个 Android 图片内存分析工具，可以帮助开发者快速发现应用的图片使用是否合理，支持在线下和线上使用。
 
@@ -78,7 +78,7 @@ android {
 }
 
 dependencies {
-    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.2'
+    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.7'
 }
 ```
 
