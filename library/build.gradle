@@ -54,7 +54,6 @@ dependencies {
     implementation 'com.bytedance.android:shadowhook:1.0.3'
 }
 
-println("uploadToMavenCentral:" + project.property("uploadToMavenCentral"))
 if (project.hasProperty("uploadToMavenCentral") && project.property("uploadToMavenCentral")) {
     publishing {
         publications {
