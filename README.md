@@ -16,6 +16,13 @@
 
 [AndroidBitmapMonitor](https://github.com/shixinzhang/AndroidBitmapMonitor) 正是为此而生！
 
+## 更新日志
+
+|版本|变更|
+|---|---|
+|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))|
+|1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题|
+
 ## 功能介绍
 
 * 支持 Android 4.4 - 13 (API level 19 - 33)
@@ -206,13 +213,6 @@ public class BitmapMonitorData {
 ``dumpBitmapInfo`` 会返回内存中所有图片的信息，如果只想获取到图片的总数和内存总量，可以调用 ``dumpBitmapCount``，速度更快更轻量。
 
 到这里我们就了解了 **Android Bitmap Monitor** 的核心 API，通过这个库我们可以对 APP 的图片使用情况有更深的了解，也可以让知识面更广一点！快来使用吧！
-
-## 更新日志
-
-|版本|变更|
-|---|---|
-|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))|
-|1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题|
 
 ## 贡献者
 
