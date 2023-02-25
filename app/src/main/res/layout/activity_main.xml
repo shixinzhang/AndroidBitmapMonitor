@@ -1,68 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:padding="12dp"
-    android:background="#cccccc"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tv_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hi there! \nThis is the sample of Android Bitmap Monitor!"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/iv_logo"/>
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_logo_pixelated_0"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        tools:src="@mipmap/logo_pixelated_0"
-        android:layout_marginTop="12dp"
-        />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_logo_pixelated_1"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        tools:src="@mipmap/logo"
-        android:layout_marginTop="12dp"
-        />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_logo_pixelated_2"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@mipmap/logo_pixelated_2"
-        android:layout_marginTop="12dp"
-        />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_logo_pixelated_3"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@mipmap/logo_pixelated_3"
-        android:layout_marginTop="12dp"
-        />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_logo"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@mipmap/logo"
-        android:layout_marginTop="12dp"
-        />
-
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/view_pager"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:background="#cccccc"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="12dp"
+        tools:context=".MainActivity">
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hi there! \nThis is the sample of Android Bitmap Monitor!"
+            app:layout_constraintBottom_toTopOf="@+id/iv_logo"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="Load by Glide:" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="200dp">
+
+            <LinearLayout
+
+                android:id="@+id/glide_horizontal_scroll_parent_view"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:layout_gravity="center_vertical"/>
+
+        </HorizontalScrollView>
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:text="Load by Picasso:" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:id="@+id/picasso_horizontal_scroll_parent_view"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:layout_gravity="center_vertical"/>
+
+        </HorizontalScrollView>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_logo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp"
+            android:src="@mipmap/logo" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_logo_pixelated_3"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp"
+            android:src="@mipmap/logo_pixelated_3" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_logo_pixelated_2"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp"
+            android:src="@mipmap/logo_pixelated_2" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_logo_pixelated_1"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp"
+            tools:src="@mipmap/logo" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iv_logo_pixelated_0"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="12dp"
+            tools:src="@mipmap/logo_pixelated_0" />
+    </LinearLayout>
+</ScrollView>

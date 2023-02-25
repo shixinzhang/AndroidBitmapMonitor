@@ -18,8 +18,8 @@ unsigned char* create_bitmap_info_header(int height, int width, int bits_per_pix
 
 // bmp 是 BGR 格式, texture read 指定的格式是 GL_RGBA
 // 需要把 RGBA -> BGR
-void convert_to_bgr(unsigned char* image, int height, int width, int bits_per_pixel) {
-    int width_in_bytes = width * bits_per_pixel;
+void convert_to_bgr(unsigned char* image, unsigned int height, unsigned int width, unsigned int bits_per_pixel) {
+    unsigned int width_in_bytes = width * bits_per_pixel;
     for (int i = 0; i < height; i++) {
         unsigned char* line_begin_addr = image + (i * width_in_bytes);
 
@@ -38,8 +38,8 @@ void convert_to_bgr(unsigned char* image, int height, int width, int bits_per_pi
     }
 }
 
-void convert_bgr_to_rgba(unsigned char* image, int height, int width, int bits_per_pixel) {
-    int width_in_bytes = width * bits_per_pixel;
+void convert_bgr_to_rgba(unsigned char* image,unsigned int height, unsigned int width, unsigned int bits_per_pixel) {
+    unsigned int width_in_bytes = width * bits_per_pixel;
     for (int i = 0; i < height; i++) {
         unsigned char* line_begin_addr = image + (i * width_in_bytes);
 
@@ -58,7 +58,7 @@ void convert_bgr_to_rgba(unsigned char* image, int height, int width, int bits_p
     }
 }
 
-void write_bitmap_file (unsigned char* image, int height, int width, char* file_full_path, int bits_per_pixel)
+void write_bitmap_file (unsigned char* image, unsigned int height, unsigned int width, char* file_full_path, unsigned int bits_per_pixel)
 {
     int width_in_bytes = width * bits_per_pixel;
 

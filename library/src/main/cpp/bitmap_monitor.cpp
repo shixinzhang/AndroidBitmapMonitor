@@ -15,16 +15,56 @@
 
 static struct BitmapMonitorContext g_ctx;
 
-//轮训检查是否回收的间隔
 static long g_recycle_check_interval_second;
 static long g_get_stack_threshold;
 static long g_restore_image_threshold;
 static const char *g_restore_image_dir;
-volatile static long g_bitmap_write_index;
 
 jstring dump_java_stack();
 jstring get_current_scene();
 long long get_current_time_millis();
+
+bool is_empty_array(unsigned char* p) {
+    return !*p;
+}
+
+/**
+ * restore image from pixel buffer, skip that if buffer is empty
+ * @param env
+ * @param bitmap_obj
+ * @param pixels
+ * @param copy_file_path
+ * @param check_size
+ */
+bool restore_image(JNIEnv *env, jobject bitmap_obj, unsigned int width, unsigned int height,
+                   unsigned int bit_per_pixel, char* copy_file_path, bool check_size) {
+    if (env == nullptr || bitmap_obj == nullptr || copy_file_path == nullptr) {
+        return false;
+    }
+    void *pixels;
+    if (AndroidBitmap_lockPixels(env, bitmap_obj, &pixels) == 0) {
+        LOGI("restore_image, width: %d, height: %d, %s", width, height, copy_file_path);
+
+        if (check_size && is_empty_array((unsigned char*)pixels)) {
+            //no pixel data yet
+            return false;
+        }
+
+        convert_to_bgr((unsigned char *) pixels, height, width, bit_per_pixel);
+        write_bitmap_file(reinterpret_cast<unsigned char *>(pixels), height, width,
+                          copy_file_path, bit_per_pixel);
+
+        convert_bgr_to_rgba((unsigned char *) pixels, height, width, bit_per_pixel);
+        AndroidBitmap_unlockPixels(env, bitmap_obj);
+
+        return true;
+    }
+
+    LOGI("create_bitmap_proxy s6, Fail to lockPixels, %d", AndroidBitmap_lockPixels(env, bitmap_obj, &pixels));
+    int length = sprintf(copy_file_path, "Restore image failed, fail to lockPixels.");
+    copy_file_path[length] = '\0';
+    return false;
+}
 
 /**
  * 保存记录，后续释放时，需要移除
@@ -35,7 +75,8 @@ void record_bitmap_allocated(ptr_long native_ptr, jobject *bitmap_obj_weak_ref,
                              AndroidBitmapInfo *android_bitmap_info,
                              jstring &bitmap_saved_path,
                              jstring &stacks,
-                             jstring &current_scene) {
+                             jstring &current_scene,
+                             bool restore_succeed) {
     if (android_bitmap_info == nullptr) {
         LOGI("record_bitmap_allocated skipped, android_bitmap_info is null!");
         return;
@@ -64,6 +105,7 @@ void record_bitmap_allocated(ptr_long native_ptr, jobject *bitmap_obj_weak_ref,
                                            .java_bitmap_ref = *bitmap_obj_weak_ref,
                                            .java_stack_jstring = stacks,
                                            .current_scene = current_scene,
+                                           .restore_succeed = restore_succeed,
                                    });
 
     g_ctx.create_bitmap_count++;
@@ -84,9 +126,10 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
         return bitmap_obj;
     }
 
-    jclass bitmap_jclass = env->FindClass("android/graphics/Bitmap");
-    jfieldID native_ptr_field = env->GetFieldID(bitmap_jclass, "mNativePtr", "J");
-    ptr_long native_ptr = env->GetLongField(bitmap_obj, native_ptr_field);
+    ptr_long native_ptr = -1;
+    if (g_ctx.native_ptr_field != nullptr) {
+        native_ptr = env->GetLongField(bitmap_obj, g_ctx.native_ptr_field);
+    }
 
     AndroidBitmapInfo android_bitmap_info{};
     int ret = AndroidBitmap_getInfo(env, bitmap_obj, &android_bitmap_info);
@@ -112,35 +155,24 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
         }
     }
 
-    char copy_file_path[128];
+    char copy_file_path[256];
     bool save_to_local = false;
+    //Default value is true, so that we can know need restore again when its value is false, no need other condition check
+    bool restore_succeed = true;
 
     if (g_restore_image_threshold > 0 && allocation_byte_count >= g_restore_image_threshold && g_restore_image_dir != nullptr) {
-        //read pixel and save to local storage
-        void *pixels;
+        //Get pixels and save to local storage
         if (g_ctx.java_vm != nullptr) {
             g_ctx.java_vm->AttachCurrentThread(&env, nullptr);
         }
 
         save_to_local = true;
+        auto time = get_current_time_millis();
 
-        if (AndroidBitmap_lockPixels(env, bitmap_obj, &pixels) == 0) {
-            long index = g_bitmap_write_index++;
-            int length = sprintf(copy_file_path, "%s/restore_%ld.bmp", g_restore_image_dir, index);
-            copy_file_path[length] = '\0';
-
-            convert_to_bgr((unsigned char *) pixels, height, width, bit_per_pixel);
-            write_bitmap_file(reinterpret_cast<unsigned char *>(pixels), height, width,
-                              copy_file_path, bit_per_pixel);
-
-            //为了减少内存使用，没有复制一份，所以上面的修改会导致颜色不对，这里再转回去
-            convert_bgr_to_rgba((unsigned char *) pixels, height, width, bit_per_pixel);
-            AndroidBitmap_unlockPixels(env, bitmap_obj);
-        } else {
-            LOGI("create_bitmap_proxy s6, Fail to lockPixels, %d", AndroidBitmap_lockPixels(env, bitmap_obj, &pixels));
-            int length = sprintf(copy_file_path, "Restore image failed, fail to lockPixels.");
-            copy_file_path[length] = '\0';
-        }
+        int length = sprintf(copy_file_path,
+                             "%s/restore_%d_%d_%lld.bmp", g_restore_image_dir, width, height, time);
+        copy_file_path[length] = '\0';
+        restore_succeed = restore_image(env, bitmap_obj, width, height, bit_per_pixel, copy_file_path, true);
     }
 
     jobject bitmap_obj_weak_ref = env->NewWeakGlobalRef(bitmap_obj);
@@ -158,9 +190,10 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
     auto current_scene_global_ref = current_scene != nullptr ?
                             reinterpret_cast<jstring>(env->NewGlobalRef(current_scene)) : nullptr;
 
-    //保存 bitmap 地址、长宽、size、本地路径（如有）
-    record_bitmap_allocated(native_ptr, &bitmap_obj_weak_ref, &android_bitmap_info,
-                            save_path_ref, stack_global_ref, current_scene_global_ref);
+    record_bitmap_allocated(
+            native_ptr, &bitmap_obj_weak_ref, &android_bitmap_info,
+            save_path_ref, stack_global_ref,
+            current_scene_global_ref, restore_succeed);
 
     return bitmap_obj;
 }
@@ -230,29 +263,29 @@ static void* thread_routine(void *) {
 
         int index = 0;
         long long sum_bytes_alloc = 0;
-        //遍历 java bitmap 对象，如果已经回收，移除记录
+        //check java bitmap object recycle state
         for (auto it = bitmap_records.begin(); it != bitmap_records.end(); it++) {
             index++;
-            //1.判断 java 对象是否被回收
+            //1.whether is reachable
             jboolean object_recycled = env->IsSameObject(it->java_bitmap_ref, nullptr);
 
             if (object_recycled == JNI_TRUE) {
-                //被回收了，移除
+                //not reachable
                 continue;
             }
 
             auto bitmap_local_ref = env->NewLocalRef(it->java_bitmap_ref);
 
-            //2.判断 bitmap 是否执行了 recycle()
+            //2.whether is recycled
             jboolean bitmap_recycled = env->CallBooleanMethod(bitmap_local_ref,
                                                               g_ctx.bitmap_recycled_method);
             if (bitmap_recycled) {
-                //这个 Bitmap 调用了 recycle ，移除
+                //recycled
                 env->DeleteLocalRef(bitmap_local_ref);
                 continue;
             }
 
-            //没被回收，添加到下次检查队列里
+            //not recycled, add for next check
             sum_bytes_alloc += (it->height * it->stride);
             copy_records.push_back({
                                            .native_ptr = it->native_ptr,
@@ -265,18 +298,18 @@ static void* thread_routine(void *) {
                                            .java_bitmap_ref = it->java_bitmap_ref,
                                            .java_stack_jstring = it->java_stack_jstring,
                                            .current_scene = it->current_scene,
+                                           .restore_succeed = it->restore_succeed,
                                    });
             env->DeleteLocalRef(bitmap_local_ref);
         }
 
         if (copy_records.size() != bitmap_records.size()) {
-            //少了一些，
             g_ctx.bitmap_records = copy_records;
         }
 
         g_ctx.record_mutex.unlock();
 
-        //上报数据
+        //report data
         int64_t remain_bitmap_count = copy_records.size();
         jobject bitmap_info_jobject = create_bitmap_info_java_object(env, remain_bitmap_count,
                                                                      sum_bytes_alloc, nullptr);
@@ -385,6 +418,21 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
             jstring save_path = record.large_bitmap_save_path;
             jstring stacks = record.java_stack_jstring;
             jstring current_scene = record.current_scene;
+            bool restore_succeed = record.restore_succeed;
+
+            if (g_ctx.java_vm != nullptr) {
+                g_ctx.java_vm->AttachCurrentThread(&env, nullptr);
+            }
+
+            if (save_path != nullptr && !restore_succeed) {
+                //Need get pixels and restore again
+                char *path = const_cast<char *>(env->GetStringUTFChars(save_path, 0));
+                unsigned int bit_per_pixel = record.stride / record.width;
+                unsigned int width = record.width;
+                unsigned int height = record.height;
+
+                restore_image(env, record.java_bitmap_ref, width, height, bit_per_pixel, path, false);
+            }
 
             //每一条记录
             jobject java_record = env->NewObject(
@@ -468,6 +516,9 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 
     jmethodID get_current_scene_method_id =
             env->GetStaticMethodID(g_ctx.bitmap_monitor_jclass, "getCurrentScene", "()Ljava/lang/String;");
+
+    jclass bitmap_jclass = env->FindClass("android/graphics/Bitmap");
+    g_ctx.native_ptr_field = env->GetFieldID(bitmap_jclass, "mNativePtr", "J");
 
     g_ctx.dump_stack_method = dump_stack_method_id;
     g_ctx.get_current_scene_method = get_current_scene_method_id;

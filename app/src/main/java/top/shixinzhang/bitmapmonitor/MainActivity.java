@@ -12,34 +12,41 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.viewpager.widget.ViewPager;
+
+import com.bumptech.glide.Glide;
+import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.net.URL;
-
-import top.shixinzhang.bitmapmonitor.fragment.LargeBitmapFragment;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    ViewPager viewPager;
+    final List<String> GLIDE_IMAGE_URL_LIST = Arrays.asList(
+            "https://img2.baidu.com/it/u=867579726,2670217964&fm=253&fmt=auto&app=120&f=JPEG?w=1280&h=800",
+            "https://img1.baidu.com/it/u=2825489197,612817393&fm=253&fmt=auto&app=120&f=JPEG?w=1280&h=800",
+            "https://t7.baidu.com/it/u=1732966997,2981886582&fm=193&f=GIF"
+    );
+
+    final List<String> PICASSO_IMAGE_URL_LIST = Arrays.asList(
+            "https://img2.baidu.com/it/u=449329914,897680117&fm=253&fmt=auto&app=138&f=JPEG?w=889&h=500",
+            "https://img0.baidu.com/it/u=4159207327,1114356188&fm=253&fmt=auto&app=138&f=JPEG?w=600&h=361",
+            "https://img0.baidu.com/it/u=2427603358,581212902&fm=253&fmt=auto&app=120&f=JPEG?w=653&h=490"
+    );
+
     final Handler H = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        viewPager = findViewById(R.id.view_pager);
-        SamplePagerAdapter adapter = new SamplePagerAdapter(getSupportFragmentManager());
-//        viewPager.setAdapter(adapter);
 
         H.postDelayed(new Runnable() {
             @Override
@@ -54,24 +61,50 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        loadImageByGlide();
+        loadImageByPicasso();
+    }
+
+    private void loadImageByGlide() {
+        LinearLayout horizontalScrollParentView = findViewById(R.id.glide_horizontal_scroll_parent_view);
+
+        int width = getResources().getDisplayMetrics().widthPixels * 3 / 4;
+
+        for (String url : GLIDE_IMAGE_URL_LIST) {
+            ImageView imageView = new ImageView(MainActivity.this);
+            Glide.with(this).load(url).into(imageView);
+
+            ViewGroup.MarginLayoutParams layoutParams = new ViewGroup.MarginLayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT);
+            layoutParams.rightMargin = 40;
+            horizontalScrollParentView.addView(imageView, layoutParams);
+        }
+    }
+
+    private void loadImageByPicasso() {
+        LinearLayout horizontalScrollParentView = findViewById(R.id.picasso_horizontal_scroll_parent_view);
+
+
+        int width = getResources().getDisplayMetrics().widthPixels * 3 / 4;
+
+        for (String url : PICASSO_IMAGE_URL_LIST) {
+            ImageView imageView = new ImageView(MainActivity.this);
+            Picasso.get().load(url).into(imageView);
+
+            ViewGroup.MarginLayoutParams layoutParams = new ViewGroup.MarginLayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT);
+            layoutParams.rightMargin = 40;
+            horizontalScrollParentView.addView(imageView, layoutParams);
+        }
     }
 
     private void testCreateBitmap() throws Exception{
-        //1.通过 BitmapFactory 解码本地、网络图片
-        File diskImage = new File(getExternalCacheDir(), "shixin.png");
-        Bitmap bitmap = BitmapFactory.decodeFile(diskImage.getAbsolutePath());
 
-        URL url = new URL("www.imagesource.com");
-        bitmap = BitmapFactory.decodeStream(url.openStream());
-
-        bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.logo_pixelated_1);
-
-        //2.给 ImageView 设置图片
+        //1.给 ImageView 设置图片
         ImageView imageView = findViewById(R.id.iv_logo_pixelated_0);
-
-        imageView.setImageDrawable(new BitmapDrawable(bitmap));
         imageView.setImageResource(R.mipmap.logo_pixelated_0);
 
+        //2.通过 BitmapFactory 解码本地、网络图片
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.logo_pixelated_1);
         ImageView imageView2 = findViewById(R.id.iv_logo_pixelated_1);
         imageView2.setImageBitmap(bitmap);
 
@@ -95,31 +128,19 @@ public class MainActivity extends AppCompatActivity {
 //        imageView1.setImageBitmap(copyBitmap);
 
         //5.加载大图
-        BitmapRegionDecoder bitmapRegionDecoder = BitmapRegionDecoder.newInstance(diskImage.getAbsolutePath(), false);
-        Rect rect = new Rect();     //这里指定要解码的区域
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        Bitmap decodeRegionBitmap = bitmapRegionDecoder.decodeRegion(rect, options);
+//        BitmapRegionDecoder bitmapRegionDecoder = BitmapRegionDecoder.newInstance(diskImage.getAbsolutePath(), false);
+//        Rect rect = new Rect();     //这里指定要解码的区域
+//        BitmapFactory.Options options = new BitmapFactory.Options();
+//        Bitmap decodeRegionBitmap = bitmapRegionDecoder.decodeRegion(rect, options);
 
-        int averageColor = getAverageColor(pixels);
-        TextView textView = findViewById(R.id.tv_title);
-        textView.setTextColor(averageColor);
+//        int averageColor = getAverageColor(pixels);
+//        TextView textView = findViewById(R.id.tv_title);
+//        textView.setTextColor(averageColor);
 
-        ImageView imageView3 = findViewById(R.id.iv_logo);
-        Bitmap logoBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.logo);
-        Bitmap blockBitmap = getBlockBitmap(logoBitmap, logoBitmap.getWidth() / 20);
-        imageView3.setImageBitmap(blockBitmap);
-
-
-        H.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    testCreateBitmap();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, 3_000);
+//        ImageView imageView3 = findViewById(R.id.iv_logo);
+//        Bitmap logoBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.logo);
+//        Bitmap blockBitmap = getBlockBitmap(logoBitmap, logoBitmap.getWidth() / 20);
+//        imageView3.setImageBitmap(blockBitmap);
     }
 
     /**
@@ -204,26 +225,5 @@ public class MainActivity extends AppCompatActivity {
         blue = Math.round(blue / len);
 
         return Color.argb(0xff, red, green, blue);
-    }
-
-    private static class SamplePagerAdapter extends FragmentPagerAdapter {
-
-        public SamplePagerAdapter(@NonNull FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public int getCount() {
-            return 2;
-        }
-
-        @NonNull
-        @Override
-        public Fragment getItem(int position) {
-            if (position == 0 || position == 1) {
-                return new LargeBitmapFragment();
-            }
-            return null;
-        }
     }
 }

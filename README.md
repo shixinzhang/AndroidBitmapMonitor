@@ -200,6 +200,18 @@ public class BitmapMonitorData {
 
 到这里我们就了解了 **Android Bitmap Monitor** 的核心 API，通过这个库我们可以对 APP 的图片使用情况有更深的了解，也可以让知识面更广一点！快来使用吧！
 
+## ChangeLog
+
+|版本|变更|
+|---|---|
+|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题|
+|1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题|
+
+## Contributor
+
+1. [shixinzhang](https://about.me/shixinzhang)
+2. 
+
 ## Thanks
 
 1. 函数 hook 通过强力的 [android-inline-hook](https://github.com/bytedance/android-inline-hook) 实现，感谢
