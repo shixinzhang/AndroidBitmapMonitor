@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/Android-4.4%20--%2013-blue.svg?style=flat)
 ![](https://img.shields.io/badge/arch-armeabi--v7a%20%7C%20arm64--v8a-blue.svg?style=flat)
-![](https://img.shields.io/badge/release-1.0.7-red.svg?style=flat)
+![](https://img.shields.io/badge/release-1.0.8-red.svg?style=flat)
 
 **Android Bitmap Monitor** 是一个 Android 图片内存分析工具，可以帮助开发者快速发现应用的图片使用是否合理，支持在线下和线上使用。
 
@@ -78,10 +78,16 @@ android {
 }
 
 dependencies {
-    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.7'
-    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.7'
+    //依赖方式 1，如果线上线下都要使用，可以通过以下方式依赖
+    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.8'
+    
+    //依赖方式 2，如果不希望正式包中有代码运行，可以通过以下方式依赖
+    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.8'
+    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.8'
 }
 ```
+
+依赖方式 1 和 2 选择其一即可。
 
 > 请注意：为了避免和其他库冲突，上面的 packagingOptions 中 ``pickFirst 'lib/*/libshadowhook.so'`` 是必要的。
 
@@ -205,13 +211,13 @@ public class BitmapMonitorData {
 
 |版本|变更|
 |---|---|
-|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题|
+|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))|
 |1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题|
 
 ## Contributor
 
 1. [shixinzhang](https://about.me/shixinzhang)
-2. 
+2. [yibaoshan](https://github.com/yibaoshan)
 
 ## Thanks
 
