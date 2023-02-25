@@ -78,7 +78,8 @@ android {
 }
 
 dependencies {
-    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.7'
+    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.7'
+    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.7'
 }
 ```
 

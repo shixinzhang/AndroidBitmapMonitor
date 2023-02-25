@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 rootProject.name = "BitmapMonitor"
 include ':app'
 include ':library'
+include ':library-no-op'
