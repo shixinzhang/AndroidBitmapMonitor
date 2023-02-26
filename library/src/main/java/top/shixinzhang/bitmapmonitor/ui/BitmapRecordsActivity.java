@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,11 +55,33 @@ public class BitmapRecordsActivity extends Activity implements View.OnClickListe
 
         tvSortBySize.setOnClickListener(this);
         tvSortByTime.setOnClickListener(this);
-        bindData();
+        requestData();
+    }
+
+    private void requestData() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                data = BitmapMonitor.dumpBitmapInfo(true);
+                if (data == null) {
+                    return;
+                }
+
+                bindDataInMainThread();
+            }
+        }).start();
+    }
+
+    private void bindDataInMainThread() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                bindData();
+            }
+        });
     }
 
     private void bindData() {
-        data = BitmapMonitor.dumpBitmapInfo();
         if (data == null) {
             return;
         }

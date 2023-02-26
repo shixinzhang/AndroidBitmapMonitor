@@ -69,7 +69,7 @@ if (project.hasProperty("uploadToMavenCentral") && project.property("uploadToMav
 
                 groupId "io.github.shixinzhang"
                 artifactId "android-bitmap-monitor-no-op"
-                version "1.0.8"
+                version "1.0.9"
 
                 afterEvaluate {
                     from components.release

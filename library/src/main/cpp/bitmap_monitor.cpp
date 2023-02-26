@@ -41,6 +41,13 @@ bool restore_image(JNIEnv *env, jobject bitmap_obj, unsigned int width, unsigned
     if (env == nullptr || bitmap_obj == nullptr || copy_file_path == nullptr) {
         return false;
     }
+    jboolean object_recycled = env->IsSameObject(bitmap_obj, nullptr);
+
+    if (object_recycled == JNI_TRUE) {
+        //not reachable
+        return false;
+    }
+
     void *pixels;
     if (AndroidBitmap_lockPixels(env, bitmap_obj, &pixels) == 0) {
         LOGI("restore_image, width: %d, height: %d, %s", width, height, copy_file_path);
@@ -392,12 +399,12 @@ jint do_hook_bitmap(long bitmap_recycle_check_interval,
 }
 
 extern "C"
-jobject do_dump_info(JNIEnv *env, bool justCount) {
-    jclass bitmap_record_class = env->FindClass(
-            "top/shixinzhang/bitmapmonitor/BitmapRecord");
+jobject do_dump_info(JNIEnv *env, bool justCount, bool ensureRestoreImage) {
 
-    jmethodID bitmap_record_constructor_method = env->GetMethodID(bitmap_record_class, "<init>",
-                                                                  "(JIIIIJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+
+    if (g_ctx.java_vm != nullptr) {
+        g_ctx.java_vm->AttachCurrentThread(&env, nullptr);
+    }
 
     if (!g_ctx.record_mutex.try_lock()) {
         return nullptr;
@@ -408,7 +415,7 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
     long long remain_bitmap_size = 0;
     int index = 0;
     jobjectArray java_bitmap_record_array = env->NewObjectArray(remain_bitmap_count,
-                                                                bitmap_record_class, nullptr);
+                                                                g_ctx.bitmap_record_class, nullptr);
 
     for (auto record : bitmap_records) {
         remain_bitmap_size += record.height * record.stride;
@@ -420,11 +427,7 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
             jstring current_scene = record.current_scene;
             bool restore_succeed = record.restore_succeed;
 
-            if (g_ctx.java_vm != nullptr) {
-                g_ctx.java_vm->AttachCurrentThread(&env, nullptr);
-            }
-
-            if (save_path != nullptr && !restore_succeed) {
+            if (ensureRestoreImage && save_path != nullptr && !restore_succeed) {
                 //Need get pixels and restore again
                 char *path = const_cast<char *>(env->GetStringUTFChars(save_path, 0));
                 unsigned int bit_per_pixel = record.stride / record.width;
@@ -436,8 +439,8 @@ jobject do_dump_info(JNIEnv *env, bool justCount) {
 
             //每一条记录
             jobject java_record = env->NewObject(
-                    bitmap_record_class,
-                    bitmap_record_constructor_method,
+                    g_ctx.bitmap_record_class,
+                    g_ctx.bitmap_record_constructor_method,
                     (jlong) record.native_ptr,
                     (jint) record.width,
                     (jint) record.height,
@@ -520,6 +523,16 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     jclass bitmap_jclass = env->FindClass("android/graphics/Bitmap");
     g_ctx.native_ptr_field = env->GetFieldID(bitmap_jclass, "mNativePtr", "J");
 
+    jclass bitmap_record_clz = env->FindClass(
+            "top/shixinzhang/bitmapmonitor/BitmapRecord");
+    g_ctx.bitmap_record_class = (jclass)env->NewGlobalRef(bitmap_record_clz);
+
+    if (g_ctx.bitmap_record_class != nullptr) {
+        g_ctx.bitmap_record_constructor_method = env->GetMethodID(g_ctx.bitmap_record_class,
+                                                                  "<init>",
+                                                                  "(JIIIIJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    }
+
     g_ctx.dump_stack_method = dump_stack_method_id;
     g_ctx.get_current_scene_method = get_current_scene_method_id;
     g_ctx.inited = true;
@@ -554,11 +567,11 @@ Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapCountNative(JNIEnv *e
     if (!g_ctx.open_hook) {
         return nullptr;
     }
-    return do_dump_info(env, true);
+    return do_dump_info(env, true, false);
 }
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapInfoNative(JNIEnv *env, jclass clazz) {
-    return do_dump_info(env, false);
+Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_dumpBitmapInfoNative(JNIEnv *env, jclass clazz, jboolean ensureRestoreImage) {
+    return do_dump_info(env, false, ensureRestoreImage);
 }

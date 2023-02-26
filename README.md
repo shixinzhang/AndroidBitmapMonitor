@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/Android-4.4%20--%2013-blue.svg?style=flat)
 ![](https://img.shields.io/badge/arch-armeabi--v7a%20%7C%20arm64--v8a-blue.svg?style=flat)
-![](https://img.shields.io/badge/release-1.0.8-red.svg?style=flat)
+![](https://img.shields.io/badge/release-1.0.9-red.svg?style=flat)
 
 **Android Bitmap Monitor** 是一个 Android 图片内存分析工具，可以帮助开发者快速发现应用的图片使用是否合理，支持在线下和线上使用。
 
@@ -20,7 +20,8 @@
 
 |版本|变更| 备注 |
 |---|---| --- |
-|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))|此版本有问题，mavenCentral 服务问题新版本暂未升级成功，请先使用 1.0.7|
+|1.0.9|优化性能，减少主线程耗时||
+|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))|此版本性能欠佳，建议使用 1.0.9|
 |1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题||
 
 ## 功能介绍
@@ -86,11 +87,11 @@ android {
 
 dependencies {
     //依赖方式 1，如果线上线下都要使用，可以通过以下方式依赖
-    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.8'
+    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.9'
     
     //依赖方式 2，如果不希望正式包中有代码运行，可以通过以下方式依赖
-    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.8'
-    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.8'
+    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.9'
+    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.9'
 }
 ```
 

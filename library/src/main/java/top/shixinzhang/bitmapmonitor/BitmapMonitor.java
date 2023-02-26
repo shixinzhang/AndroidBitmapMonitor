@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import androidx.annotation.Keep;
+import androidx.annotation.WorkerThread;
 
 import top.shixinzhang.bitmapmonitor.ui.FloatWindow;
 
@@ -112,8 +113,14 @@ public class BitmapMonitor {
     /**
      * 获取这段期间 hook 的 bitmap 数据 （包括总数和具体各个图片的信息）
      */
+    @WorkerThread
     public static BitmapMonitorData dumpBitmapInfo() {
-        return dumpBitmapInfoNative();
+        return dumpBitmapInfoNative(false);
+    }
+
+    @WorkerThread
+    public static BitmapMonitorData dumpBitmapInfo(boolean ensureRestoreImage) {
+        return dumpBitmapInfoNative(true);
     }
 
     /**
@@ -233,12 +240,12 @@ public class BitmapMonitor {
     private static native BitmapMonitorData dumpBitmapCountNative();
 
     /**
-     * 获取数量和堆栈信息
-     *
+     * Get all bitmap info
+     * @param ensureRestoreImage whether need check and restore again
      * @return
      */
     @Keep
-    private static native BitmapMonitorData dumpBitmapInfoNative();
+    private static native BitmapMonitorData dumpBitmapInfoNative(boolean ensureRestoreImage);
 
     public static class Config {
         //检查 Bitmap 是否回收的间隔，单位：秒
