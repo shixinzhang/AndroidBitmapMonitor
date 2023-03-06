@@ -14,6 +14,7 @@ import java.util.List;
 import androidx.annotation.Keep;
 import androidx.annotation.WorkerThread;
 
+import top.shixinzhang.bitmapmonitor.internal.BitmapFileWatcher;
 import top.shixinzhang.bitmapmonitor.ui.FloatWindow;
 
 /**
@@ -53,6 +54,7 @@ public class BitmapMonitor {
 
         int ret = ShadowHook.init();
         ShadowHook.setDebuggable(config.isDebug);
+        BitmapFileWatcher.config(config.restoreImageDirectory, config.diskCacheLimitBytes);
 
         if (isDebug()) {
             log("init called, ret:" + ret + config);
@@ -204,6 +206,11 @@ public class BitmapMonitor {
         return null;
     }
 
+    @Keep
+    public static void reportBitmapFile(String file) {
+        BitmapFileWatcher.startWatch(file);
+    }
+
     public static boolean isDebug() {
         return sConfig != null && sConfig.isDebug;
     }
@@ -254,6 +261,8 @@ public class BitmapMonitor {
         long getStackThreshold;
         //超过这个阈值后，保存像素数据为图片，以便分析内容，单位 byte
         long restoreImageThreshold;
+        // 本地图片缓存写入上限，单位为 byte，默认大小为 1 GB
+        long diskCacheLimitBytes = 1024 * 1024 * 2014;
         //图片还原保存路径
         String restoreImageDirectory;
         //是否展示悬浮窗，开启后可以实时查看数据
