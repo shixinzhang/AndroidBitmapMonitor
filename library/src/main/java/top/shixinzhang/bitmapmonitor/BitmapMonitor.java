@@ -157,7 +157,7 @@ public class BitmapMonitor {
      */
     @Keep
     public static String dumpJavaStack() {
-        StackTraceElement[] st = Thread.currentThread().getStackTrace();
+        StackTraceElement[] st = new Throwable().getStackTrace();
         StringBuilder sb = new StringBuilder();
         sb.setLength(0);
 
