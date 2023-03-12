@@ -15,3 +15,5 @@
 .cxx
 local.properties
 gradle.properties
+gradle_copy.properties
+README1.md

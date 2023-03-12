@@ -19,6 +19,7 @@ static long g_recycle_check_interval_second;
 static long g_get_stack_threshold;
 static long g_restore_image_threshold;
 static const char *g_restore_image_dir;
+static bool g_notify_check_local_image_size;
 
 jstring dump_java_stack();
 jstring get_current_scene();
@@ -63,6 +64,11 @@ bool restore_image(JNIEnv *env, jobject bitmap_obj, unsigned int width, unsigned
 
         convert_bgr_to_rgba((unsigned char *) pixels, height, width, bit_per_pixel);
         AndroidBitmap_unlockPixels(env, bitmap_obj);
+
+        if (g_notify_check_local_image_size) {
+            auto save_path_jstring = reinterpret_cast<jstring>(env->NewStringUTF(copy_file_path));
+            env->CallStaticVoidMethod(g_ctx.bitmap_monitor_jclass, g_ctx.report_bitmap_file_method, save_path_jstring);
+        }
 
         return true;
     }
@@ -201,7 +207,6 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
             native_ptr, &bitmap_obj_weak_ref, &android_bitmap_info,
             save_path_ref, stack_global_ref,
             current_scene_global_ref, restore_succeed);
-    if (save_to_local && restore_succeed) env->CallStaticVoidMethod(g_ctx.bitmap_monitor_jclass, g_ctx.report_bitmap_file_method, save_path_ref);
     return bitmap_obj;
 }
 
@@ -347,12 +352,14 @@ int get_api_level() {
 jint do_hook_bitmap(long bitmap_recycle_check_interval,
                         long get_stack_threshold,
                         long restore_image_threshold,
-                        const char *restore_image_dir) {
+                        const char *restore_image_dir,
+                        bool notify_check_local_image_size) {
 
     g_recycle_check_interval_second = bitmap_recycle_check_interval;
     g_get_stack_threshold = get_stack_threshold;
     g_restore_image_threshold = restore_image_threshold;
     g_restore_image_dir = restore_image_dir;
+    g_notify_check_local_image_size = notify_check_local_image_size;
 
     int api_level = get_api_level();
 
@@ -549,10 +556,11 @@ Java_top_shixinzhang_bitmapmonitor_BitmapMonitor_hookBitmapNative(JNIEnv *env, j
                                                                   jlong check_recycle_interval,
                                                                   jlong get_stack_threshold,
                                                                   jlong restore_image_threshold,
-                                                                  jstring restore_image_dir) {
+                                                                  jstring restore_image_dir,
+                                                                  jboolean notify_check_local_image_size) {
 
     const char* dir = env->GetStringUTFChars(restore_image_dir, 0);
-    return do_hook_bitmap(check_recycle_interval, get_stack_threshold, restore_image_threshold, dir);
+    return do_hook_bitmap(check_recycle_interval, get_stack_threshold, restore_image_threshold, dir, notify_check_local_image_size);
 }
 
 extern "C"

@@ -1,6 +1,9 @@
 package top.shixinzhang.bitmapmonitor.internal;
 
 import android.os.Build;
+import android.os.FileUtils;
+import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 import java.util.Arrays;
@@ -11,6 +14,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import top.shixinzhang.bitmapmonitor.BitmapMonitor;
 
 public class BitmapFileWatcher {
 
@@ -26,6 +31,8 @@ public class BitmapFileWatcher {
 
     private static volatile long mUsedTotalSize;
 
+    private static boolean sClearFileWhenOutOfThreshold;
+
     private static final List<File> mAllFiles = new CopyOnWriteArrayList<>();
 
     private static final List<BitmapFileListener> mFileListeners = new CopyOnWriteArrayList<>();
@@ -38,8 +45,8 @@ public class BitmapFileWatcher {
     private static final ThreadPoolExecutor mFileWatcherExecutor;
 
     static {
-        mFileWatcherExecutor = new ThreadPoolExecutor(1, 1,
-                0L, TimeUnit.MILLISECONDS,
+        mFileWatcherExecutor = new ThreadPoolExecutor(0, 1,
+                100L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(1), Executors.defaultThreadFactory(), new ThreadPoolExecutor.DiscardOldestPolicy());
         mFileWatcherExecutor.execute(BitmapFileWatcher::loadAllFileToMemory);
     }
@@ -55,23 +62,48 @@ public class BitmapFileWatcher {
         mFileListeners.remove(fileListener);
     }
 
-    public static void config(String bmpRootPath, long limitSize) {
+    /**
+     * 根据配置，决定是每次重启就删除之前的文件，还是在运行时超出后就删除
+     * @param bmpRootPath
+     * @param clearAllFileWhenRestartApp
+     * @param clearFileWhenOutOfThreshold
+     * @param limitSize
+     */
+    public static void init(String bmpRootPath, boolean clearAllFileWhenRestartApp, boolean clearFileWhenOutOfThreshold, long limitSize) {
         mRootDirectoryPath = bmpRootPath;
         mLimitBytes = limitSize;
+        sClearFileWhenOutOfThreshold = clearFileWhenOutOfThreshold;
+
+        if (mRootDirectoryPath == null)
+            throw new IllegalArgumentException("restore image directory must not be empty!");
+
+        if (clearAllFileWhenRestartApp) {
+            File file = new File(mRootDirectoryPath);
+            if (file.exists()) {
+                deleteDir(file);
+            }
+        }
     }
 
     public static void startWatch(String path) {
-        if (mRootDirectoryPath == null)
-            throw new IllegalArgumentException("restore image directory must not be empty!");
-        File file = new File(mRootDirectoryPath);
-        if (!file.exists())
-            throw new IllegalArgumentException("please check the restore image director is valid!!!");
+        // FIXME: 2023/3/12
+        BitmapMonitor.log("BitmapFileWatcher s1 startWatch " + sClearFileWhenOutOfThreshold + ", " + path + ", exist: " + new File(path).exists());
+        if (!sClearFileWhenOutOfThreshold || TextUtils.isEmpty(path)) {
+            return;
+        }
+        if (!new File(path).exists()) {
+            BitmapMonitor.log("BitmapFileWatcher return, file not exist " + path);
+            return;
+        }
         mFileWatcherExecutor.execute(new WatchFileRunnable(path));
     }
 
     private static void loadAllFileToMemory() {
         synchronized (LOCK) {
             File rootPath = new File(mRootDirectoryPath);
+            if (!rootPath.exists()) {
+                return;
+            }
             File[] files = rootPath.listFiles();
             if (files == null) return;
 
@@ -111,6 +143,34 @@ public class BitmapFileWatcher {
         for (BitmapFileListener listener : mFileListeners) listener.onDeletedFileFromIOThread(ret);
     }
 
+    public static boolean deleteDir(File dir) {
+
+        if (dir == null)
+            return false;
+
+        try {
+            if (!dir.isDirectory()) {
+                return dir.delete();
+            }
+
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    deleteDir(f);
+                }
+
+                if (BitmapMonitor.isDebug()) {
+                    Log.d("BitmapMonitor", "deleteDir size: " + files.length);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     private static final class WatchFileRunnable implements Runnable {
 
         private final String mCurFilePath;
@@ -121,12 +181,20 @@ public class BitmapFileWatcher {
 
         @Override
         public void run() {
+
+            BitmapMonitor.log("BitmapFileWatcher s2 WatchFileRunnable run " + mCurFilePath);
+
             File file = new File(mCurFilePath);
             if (!file.exists() || !file.isFile()) return;
             synchronized (LOCK) {
                 mAllFiles.add(file);
                 mUsedTotalSize += file.length();
-                long over = mLimitBytes - mUsedTotalSize - file.length();
+                long over = mLimitBytes - mUsedTotalSize;
+
+                if (BitmapMonitor.isDebug()) {
+                    BitmapMonitor.log("WatchFileRunnable.run >> file size: " + file.length() + ", totalSize:" + mUsedTotalSize + ", over " + over);
+                }
+
                 if (over < 0) deleteFileFromRootDirectory(over);
             }
         }

@@ -18,7 +18,7 @@ import top.shixinzhang.bitmapmonitor.internal.BitmapFileWatcher;
 import top.shixinzhang.bitmapmonitor.ui.FloatWindow;
 
 /**
- * Description:
+ * Description: BitmapMonitor 入口类，如果要修改配置请调用 new BitmapMonitor.Config.Builder()
  * <br>
  *
  * <br> Created by shixinzhang on 2022/5/8.
@@ -54,7 +54,8 @@ public class BitmapMonitor {
 
         int ret = ShadowHook.init();
         ShadowHook.setDebuggable(config.isDebug);
-        BitmapFileWatcher.config(config.restoreImageDirectory, config.diskCacheLimitBytes);
+        BitmapFileWatcher.init(config.restoreImageDirectory, config.clearAllFileWhenRestartApp,
+                config.clearFileWhenOutOfThreshold, config.diskCacheLimitBytes);
 
         if (isDebug()) {
             log("init called, ret:" + ret + config);
@@ -79,7 +80,7 @@ public class BitmapMonitor {
         sCurrentSceneProvider = provider;
 
         int ret = hookBitmapNative(sConfig.checkRecycleInterval, sConfig.getStackThreshold,
-                sConfig.restoreImageThreshold, sConfig.restoreImageDirectory);
+                sConfig.restoreImageThreshold, sConfig.restoreImageDirectory, sConfig.clearFileWhenOutOfThreshold);
 
         if (sConfig.showFloatWindow) {
             toggleFloatWindowVisibility(true);
@@ -208,6 +209,9 @@ public class BitmapMonitor {
 
     @Keep
     public static void reportBitmapFile(String file) {
+        if (isDebug()) {
+            log("BitmapFileWatcher s0 reportBitmapFile >>> " + file);
+        }
         BitmapFileWatcher.startWatch(file);
     }
 
@@ -215,7 +219,7 @@ public class BitmapMonitor {
         return sConfig != null && sConfig.isDebug;
     }
 
-    private static void log(String msg) {
+    public static void log(String msg) {
         if (!isDebug()) {
             return;
         }
@@ -232,7 +236,8 @@ public class BitmapMonitor {
      * @return 0 if success
      */
     @Keep
-    private static native int hookBitmapNative(long checkRecycleInterval, long getStackThreshold, long copyLocalThreshold, String copyDir);
+    private static native int hookBitmapNative(long checkRecycleInterval, long getStackThreshold,
+                                               long copyLocalThreshold, String copyDir, boolean clearFileWhenOutOfThreshold);
 
     @Keep
     private static native void stopHookBitmapNative();
@@ -261,16 +266,19 @@ public class BitmapMonitor {
         long getStackThreshold;
         //超过这个阈值后，保存像素数据为图片，以便分析内容，单位 byte
         long restoreImageThreshold;
-        // 本地图片缓存写入上限，单位为 byte，默认大小为 1 GB
-        long diskCacheLimitBytes = 1024 * 1024 * 2014;
+        // 本地图片缓存写入上限，单位为 byte
+        long diskCacheLimitBytes;
         //图片还原保存路径
         String restoreImageDirectory;
         //是否展示悬浮窗，开启后可以实时查看数据
         boolean showFloatWindow;
         boolean isDebug;
-        //图片数据是否持久化到磁盘
+        //图片数据是否持久化到磁盘（暂未实现 2023.03.12）
         boolean persistDataInDisk;
-
+        //重启后清除本地所有文件
+        boolean clearAllFileWhenRestartApp;
+        //运行时，本地文件占用磁盘超出阈值就清理
+        boolean clearFileWhenOutOfThreshold;
         //建议用 application context
         Context context;
 
@@ -283,6 +291,9 @@ public class BitmapMonitor {
             isDebug = builder.isDebug;
             persistDataInDisk = builder.persistDataInDisk;
             context = builder.context;
+            clearAllFileWhenRestartApp = builder.clearAllFileWhenRestartApp;
+            clearFileWhenOutOfThreshold = builder.clearFileWhenOutOfThreshold;
+            diskCacheLimitBytes = builder.diskCacheLimitBytes;
         }
 
 
@@ -294,6 +305,12 @@ public class BitmapMonitor {
             private boolean showFloatWindow;
             private boolean isDebug;
             private boolean persistDataInDisk;
+            //重启后清除本地所有文件（目前不支持展示历史数据，所以默认清除本地所有 2023.03.12）
+            private boolean clearAllFileWhenRestartApp = true;
+            //运行时超出阈值就清理，阈值为 diskCacheLimitBytes
+            private boolean clearFileWhenOutOfThreshold;
+            //本地图片缓存写入上限，单位为 byte，默认大小为 512MB，超出后会立刻删除
+            private long diskCacheLimitBytes = 1024 * 1024 * 512;
             private Context context;
 
             public Builder() {
@@ -313,7 +330,6 @@ public class BitmapMonitor {
                 restoreImageThreshold = val;
                 return this;
             }
-
             public Builder restoreImageDirectory(String val) {
                 restoreImageDirectory = val;
                 return this;
@@ -323,6 +339,22 @@ public class BitmapMonitor {
                 showFloatWindow = val;
                 return this;
             }
+
+            public Builder clearAllFileWhenRestartApp(boolean val) {
+                clearAllFileWhenRestartApp = val;
+                return this;
+            }
+
+            public Builder clearFileWhenOutOfThreshold(boolean val) {
+                clearFileWhenOutOfThreshold = val;
+                return this;
+            }
+
+            public Builder diskCacheLimitBytes(long val) {
+                diskCacheLimitBytes = val;
+                return this;
+            }
+
 
             public Builder isDebug(boolean val) {
                 isDebug = val;
@@ -341,13 +373,18 @@ public class BitmapMonitor {
 
         @Override
         public String toString() {
-            return "Config:\n" +
+            return "Config{" +
                     "checkRecycleInterval=" + checkRecycleInterval +
-                    ", \ngetStackThreshold=" + getStackThreshold +
-                    ", \nrestoreImageThreshold=" + restoreImageThreshold +
-                    ", \nrestoreImageDirectory='" + restoreImageDirectory + '\'' +
-                    ", \nshowFloatWindow=" + showFloatWindow +
-                    ", \nisDebug=" + isDebug;
+                    ", getStackThreshold=" + getStackThreshold +
+                    ", restoreImageThreshold=" + restoreImageThreshold +
+                    ", restoreImageDirectory='" + restoreImageDirectory + '\'' +
+                    ", showFloatWindow=" + showFloatWindow +
+                    ", isDebug=" + isDebug +
+                    ", clearAllFileWhenRestartApp=" + clearAllFileWhenRestartApp +
+                    ", clearFileWhenOutOfThreshold=" + clearFileWhenOutOfThreshold +
+                    ", diskCacheLimitBytes=" + diskCacheLimitBytes +
+                    ", context=" + context +
+                    '}';
         }
     }
 }

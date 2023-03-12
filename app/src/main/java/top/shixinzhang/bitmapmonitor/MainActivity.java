@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
         loadImageByGlide();
         loadImageByPicasso();
+
     }
 
     private void loadImageByGlide() {
@@ -179,6 +181,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return back;
+    }
+
+    private void testStacktraceGetCost(boolean exceptionStackTrace) {
+        long start = System.currentTimeMillis();
+        for(long i=0; i<100000; i++) {
+
+            StackTraceElement [] stackTrace;
+
+            if (exceptionStackTrace)
+                stackTrace = new Throwable().getStackTrace();
+            else
+                stackTrace = Thread.currentThread().getStackTrace();
+        }
+
+        String desc = exceptionStackTrace ? "exceptionStackTrace" : "currentThread.getStackTrace";
+        Log.d("z_test", "testStacktraceGetCost: " + desc + ", cost: " + (System.currentTimeMillis() - start));
     }
 
     /**
