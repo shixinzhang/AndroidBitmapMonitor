@@ -2,108 +2,109 @@
 
 ![](https://img.shields.io/badge/Android-4.4%20--%2013-blue.svg?style=flat)
 ![](https://img.shields.io/badge/arch-armeabi--v7a%20%7C%20arm64--v8a-blue.svg?style=flat)
-![](https://img.shields.io/badge/release-1.0.9-red.svg?style=flat)
+![](https://img.shields.io/badge/release-1.1.0-red.svg?style=flat)
 
-**Android Bitmap Monitor** 是一个 Android 图片内存分析工具，可以帮助开发者快速发现应用的图片使用是否合理，支持在线下和线上使用。
+**Android Bitmap Monitor** is an Android image memory analysis tool that can help developers quickly find out whether the image usage of their apps is reasonable, supporting both offline and online usage.
+
+[中文介绍](README_CN.md)
 
 ---
 
-**在 Android 应用的内存使用中，图片总是占据不少比例**。
+**In the memory usage of Android applications, images always occupy a large proportion.**
 
-拿小米 12（3200 x 1440 的分辨率） 来说，一张全屏的图片至少要占用 17MB（3200 x 1440 x 4 ）。如果缓存里多几张，基本就要达到上百 MB，稍有不当，就可能导致应用的内存溢出崩溃大大增加。
+Take Xiaomi 12 (3200 x 1440 resolution) for example, a full screen image will take at least 17MB (3200 x 1440 x 4). If there are a few more in the cache, it will basically reach hundreds of MB, and the slightest impropriety may lead to a significant increase in memory overflow crashes of the application.
 
-因此，我们需要这样的工具：**可以快速发现应用内加载的图片是否合理**，比如大小是否合适、是否存在泄漏、缓存是否及时清理、是否加载了当前并不需要的图片等等。
+Therefore, we need a tool that can **quickly find out whether the images loaded in the application are reasonable, such as whether the size is appropriate, whether there are leaks, whether the cache is cleaned in time, whether the images that are not currently needed are loaded**, and so on.
 
-[AndroidBitmapMonitor](https://github.com/shixinzhang/AndroidBitmapMonitor) 正是为此而生！
+[AndroidBitmapMonitor](https://github.com/shixinzhang/AndroidBitmapMonitor) is made for this purpose!
 
-## 更新日志
+## Update log
 
-|版本|变更| 备注 |
+| Version | Changes | Notes |
 |---|---| --- |
-|1.0.9|优化性能，减少主线程耗时|推荐使用|
-|1.0.8|修复使用 Glide 加载的图片，还原时可能为纯黑的问题；支持 no-op 依赖(感谢 [yibaoshan](https://github.com/yibaoshan))||
-|1.0.7|完善悬浮窗和图片列表功能，修复悬浮窗可能出现多个的问题||
+|1.1.0|Support clearing locally saved image data to avoid taking up too much storage|Recommend|
+|1.0.9|Optimize performance, reduce main thread time consumption||
+|1.0.8|Fix the problem that images loaded with Glide may be solid black when restored; support no-op dependency (thanks to [yibaoshan](https://github.com/yibaoshan))||
+|1.0.7|Improve the function of hover window and picture list, fix the problem that the hover window may appear more than one||
 
-## 功能介绍
+## Features
 
-* 支持 Android 4.4 - 13 (API level 19 - 33)
-* 支持 armeabi-v7a 和 arm64-v8a
-* 支持线下实时查看图片内存情况 和 线上数据统计
+1. Support Android 4.4 - 13 (API level 19 - 33)
+2. Support armeabi-v7a and arm64-v8a
+3. Support offline real-time image memory view and online statistics
 
-可以提供的功能：
+Functions:
 
-1. 获取内存中的图片数量及占用内存
-2. 获取 Bitmap 创建堆栈及线程
-3. 全版本 Bitmap Preview，在堆栈无法看出问题时，可以用来定位图片所属业务
+1. Get the number of images in memory and how much memory they occupy
+2. Get Bitmap creation stacks and threads
+3. Bitmap Preview, which can be used to locate the business to which the image belongs when the stack cannot see the problem
 
-动图：
 <div align=center><img width="300" src="images/capture.gif"/></div>
 
-核心功能截图：
+Screenshot of core functionality:
 
 <div align=center><img width="300" src="images/capture_1.jpg"/></div>
-<div align=center><p>悬浮窗中可以实时查看到图片内存</p></div>
+<div align=center><p>Real-time view of image memory in the hover window</p></div>
 
 <div align=center><img width="300" src="images/capture_2.jpg"/></div>
-<div align=center><p>内存中的图片信息</p></div>
+<div align=center><p>Image information in memory</p></div>
 
 <div align=center><img width="300" src="images/capture_3.jpg"/></div>
-<div align=center><p>某张图片的具体信息</p></div>
+<div align=center><p>Specific information about a particular image</p></div>
 
-## 使用文档
+## Documentation
 
+Use AndroidBitmapMonitor, there are four main steps:
 
-您可以参考 [app module](app) 中的示例 app 添加依赖，这里介绍具体添加方式，主要有四步：
+1. Adding gradle dependencies
+2. Initialize the configuration
+3. Call start and stop when needed
+4. Get the data
 
-1. 添加 gradle 依赖
-2. 初始化配置
-3. 在需要的时候调用 start 和 stop
-4. 获取数据
+### 1.Adding dependencies in build.gradle
 
-### 1. 在 build.gradle 中增加依赖
+Android Bitmap Monitor is published on mavenCentral, so first you need to make sure your project uses mavenCentral as a repository.
 
-Android Bitmap Monitor 发布在 mavenCentral 上，因此首先需要确保您的项目有使用 mavenCentral 作为仓库。
-
-您可以在根目录的 build.gradle 或者 setting.gradle 中添加以下代码：
+You can add the following code to build.gradle or setting.gradle in the root directory.
 
 ```
 allprojects {
-    repositories {
-        //...
-        //添加 mavenCentral 依赖
-        mavenCentral()
-    }
+	repositories {
+		//...
+		//add mavenCentral dependencies
+		mavenCentral()
+	}
 }
 ```
 
-接着在具体业务的 build.gradle 文件中添加依赖：
+Next, add the dependency to the business-specific build.gradle file.
 
 ```
 android {
-    packagingOptions {
-        pickFirst 'lib/*/libshadowhook.so'
-    }
+	packagingOptions {
+		pickFirst 'lib/*/libshadowhook.so'
+	}
 }
 
 dependencies {
-    //依赖方式 1，如果线上线下都要使用，可以通过以下方式依赖
-    implementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.9'
-    
-    //依赖方式 2，如果不希望正式包中有代码运行，可以通过以下方式依赖
-    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.0.9'
-    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.0.9'
+   //dependencies 1, if you want to use it both online and offline, you can depend on it in the following way
+   implementation 'io.github.shixinzhang:android-bitmap-monitor:1.1.0'
+
+    // Dependency 2, if you don't want to have code running in the official package, you can depend on it in the following way
+    releaseImplementation 'io.github.shixinzhang:android-bitmap-monitor-no-op:1.1.0'
+    debugImplementation 'io.github.shixinzhang:android-bitmap-monitor:1.1.0'
 }
 ```
 
-依赖方式 1 和 2 选择其一即可。
+Choose one of dependency 1 or 2.
 
-> 请注意：为了避免和其他库冲突，上面的 packagingOptions 中 ``pickFirst 'lib/*/libshadowhook.so'`` 是必要的。
+> Note: To avoid conflicts with other libraries, pickFirst 'lib/*/libshadowhook.so' in the packagingOptions above is necessary.
 
-添加完依赖并执行 gradle sync 后，下一步就是在代码里进行初始化和启动。
+After adding the dependencies and executing gradle sync, the next step is to initialize and start it in the code.
 
-### 2. 初始化
+### 2. Initialization
 
-初始化需要调用的 API 是 ``BitmapMonitor.init``：
+The API to be called for initialization is ``BitmapMonitor.init``.
 
 ```
         long checkInterval = 10;
@@ -111,63 +112,66 @@ dependencies {
         long restoreImageThreshold = 100 * 1024;;
         String dir = this.getExternalFilesDir("bitmap_monitor").getAbsolutePath();
 
-        BitmapMonitor.Config config = new BitmapMonitor.Config.Builder()
-                .checkRecycleInterval(checkInterval)    //检查图片是否被回收的间隔，单位：秒 （建议不要太频繁，默认 5秒）
-                .getStackThreshold(threshold)           //获取堆栈的阈值，当一张图片占据的内存超过这个数值后就会去抓栈
-                .restoreImageThreshold(restoreImageThreshold)   //还原图片的阈值，当一张图占据的内存超过这个数值后，就会还原出一张原始图片
-                .restoreImageDirectory(dir)             //保存还原后图片的目录
-                .showFloatWindow(true)                  //是否展示悬浮窗，可实时查看内存大小（建议只在 debug 环境打开）
+        BitmapMonitor.Config config = new BitmapMonitor.
+                .checkRecycleInterval(checkInterval)                            // check if the image is recycled interval, in seconds (recommended not too often, default 5 seconds)
+                .getStackThreshold(threshold)                                   // get the threshold of the stack, when an image occupies more than this value of memory will go to grab the stack
+                .restoreImageThreshold(restoreImageThreshold)                   // restore the image threshold, when a picture occupies more memory than this value, it will restore an original picture
+                .restoreImageDirectory(dir)                                     // the directory of the restored image
+                .showFloatWindow(true)                                          // whether to show a hover window to see the memory size in real time (recommended to open only in debug environment)
+                .clearAllFileWhenRestartApp(true)                               
+                .clearFileWhenOutOfThreshold(true)                              
+                .diskCacheLimitBytes(100 * 1024 * 1024)                          
                 .isDebug(true)
                 .context(this)
                 .build();
         BitmapMonitor.init(config);
 ```
 
-> 当 showFloatWindow 为 true 时，首次启动 app 需要授予悬浮窗权限。
+> When showFloatWindow is true, you need to grant hover window permission when you start the app for the first time.
 
-### 3. 开启和停止监控
+### 3. Turning on and off monitoring
 
-初始化完成后，可以在任意时刻调用 start/stop 开启和停止监控:
+After initialization, you can call start/stop at any time to start and stop monitoring:
 
 ```
-        //开启监控，方式1
+        //start monitoring, method 1
         BitmapMonitor.start();
         
-        //开启方式2，提供页面获取接口，建议使用
+        //Start way 2, provide page to get interface, recommended to use
         BitmapMonitor.start(new BitmapMonitor.CurrentSceneProvider() {
             @Override
             public String getCurrentScene() {
-                //返回当前顶部页面名称
-                if (sCurrentActivity != null) {
+                //return the current top page name
+                if (sCurrentActivity ! = null) {
                     return sCurrentActivity.getClass().getSimpleName();
                 }
                 return null;
             }
         });
         
-        //停止监控
+        //Stop monitoring
         BitmapMonitor.stop();
 ```
 
-上面的代码中，开启方式 2 的参数用来获取图片创建时的页面名称，这个接口可以帮助知道大图是在哪个页面创建的。如果不想提供这个接口可以使用开启方式 1。
+In the above code, the parameter of open method 2 is used to get the page name when the image was created, this interface can help to know in which page the large image was created. If you don't want to provide this interface, you can use open method 1.
 
-那我们该在什么使用开启监控呢？
+So what do we use to turn on monitoring?
 
-一般有「全局开启」和「分业务开启」两种使用方式：
+Generally there are two ways to use "global start" and "business start".
 
-1. 全局开启：一启动就 start，用于了解整个 APP 使用过程中的图片内存数据
-2. 分业务开启：在进入某个业务前 start，退出后 stop，用于了解特定业务的图片内存数据
+1. Global start: start as soon as app start, for understanding the image memory data during the whole APP usage
+2. Business start: start when you want, which is used to understand the image memory data of special business
 
-### 4. 获取数据
+### 4. Get data
 
-在初始化完成并开启监控后，我们就可以拦截到每张图片的创建过程。
+After initialization and monitoring, we can intercept the creation process of each image.
 
-**Android Bitmap Monitor** 提供了两种获取内存中图片数据的 API：
+**Android Bitmap Monitor** provides two APIs to get the image data in memory.
 
-1. 定时回调 addListener
-2. 主动获取数据 dumpBitmapInfo
+1. Interval callback addListener
+2. Manual fetch data use ``dumpBitmapInfo``
 
-**定时回调** 是指注册一个 listener，这个接口的回调会按照一定时间间隔被调用，**可以用来做实时监控**：
+Interval callbacks means registering a listener, which will be called at certain intervals and can be used for real-time monitoring.
 
 ```
         BitmapMonitor.addListener(new BitmapMonitor.BitmapInfoListener() {
@@ -178,61 +182,60 @@ dependencies {
         });
 ```
 
-间隔时间是初始化时传递的参数 checkRecycleInterval，返回的数据结构如下所示：
+The interval is the parameter ``checkRecycleInterva``l passed during initialization, and the returned data structure is shown below:
 
 ```
 public class BitmapMonitorData {
-    //历史创建的总图片数
-    public long createBitmapCount;
-    //历史创建的总图片内存大小，单位 byte
-    public long createBitmapMemorySize;
+// history of the total number of images created
+public long createBitmapCount;
+// history of the creation of the total image memory size, unit byte
+public long createBitmapMemorySize;
 
-    //当前内存中还未回收的图片数
+    // the current number of images in memory that have not been recycled
     public long remainBitmapCount;
-    //当前内存中还未回收的图片内存大小，单位 byte
+    // the current memory has not been recycled image memory size, unit byte
     public long remainBitmapMemorySize;
 
-    //泄漏（未释放）的 bitmap 数据
+    //leakage (not released) of bitmap data
     public BitmapRecord[] remainBitmapRecords;
     
     //...
 }
 ```
 
-**主动获取数据** 是指主动调用 ``BitmapMonitor.dumpBitmapInfo()`` 获取内存中的所有数据，**可以用在内存升高时上报数据**：
+Manual fetch data use ``dumpBitmapInfo``, means actively calling ``BitmapMonitor.dumpBitmapInfo()`` to fetch all data in memory, which can be used to report data when memory is elevated.
 
 ```
-        //获取所有数据
+        // Get all the data
         BitmapMonitorData bitmapAllData = BitmapMonitor.dumpBitmapInfo();
         Log.d("bitmapmonitor", "bitmapAllData: " + bitmapAllData);
         
-        //仅获取数量和内存大小，不获取具体图片信息
+        //get only the number and memory size, not the specific image information
         BitmapMonitorData bitmapCountData = BitmapMonitor.dumpBitmapCount();
         Log.d("bitmapmonitor", "bitmapCountData: " + bitmapCountData);
 ```
 
-``dumpBitmapInfo`` 会返回内存中所有图片的信息，如果只想获取到图片的总数和内存总量，可以调用 ``dumpBitmapCount``，速度更快更轻量。
+If you just want to get the total number of images and the total amount of memory, you can call dumpBitmapCount, which is faster and lighter.
 
-到这里我们就了解了 **Android Bitmap Monitor** 的核心 API，通过这个库我们可以对 APP 的图片使用情况有更深的了解，也可以让知识面更广一点！快来使用吧！
+Here we understand the core API of Android Bitmap Monitor, through this library we can have a deeper understanding of APP's image usage, and also make the knowledge a little wider! Come and use it!
 
-## 贡献者
+## Contributed by
 
-1. [shixinzhang](https://about.me/shixinzhang)
-2. [yibaoshan](https://github.com/yibaoshan)
+shixinzhang
+yibaoshan
 
-## 致谢
+## Thanks
 
-1. 函数 hook 通过强力的 [android-inline-hook](https://github.com/bytedance/android-inline-hook) 实现，感谢
-2. 图片导出基于 [Nian Sun](https://www.linkedin.cn/incareer/in/nian-sun-531b3745) 的实现开发而成，感谢
+1. The function hook is implemented by the powerful [android-inline-hook](https://github.com/bytedance/android-inline-hook), thanks.
+2. The image export is based on [Nian Sun](https://www.linkedin.cn/incareer/in/nian-sun-531b3745)'s implementation.
 
-# 联系我
+## Contact me
 
 <div style="display:flex; flex-direction:row">
     <img width="300" src="images/wechat_channel.jpg"/>
     <img width="280" src="images/wechat.jpg"/>
 </div>
 
+## License
 
-## 许可证
-
-**Android Bitmap Monitor**  使用 [Apache 2.0](LICENSE) 授权。
+Android Bitmap Monitor is licensed under Apache 2.0
