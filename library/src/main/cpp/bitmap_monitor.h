@@ -53,6 +53,7 @@ struct BitmapMonitorContext {
 
     jclass bitmap_info_jclass;
     jmethodID report_bitmap_data_method;
+    jmethodID report_bitmap_file_method;
 
     jclass bitmap_record_class;
     jmethodID bitmap_record_constructor_method;

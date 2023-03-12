@@ -201,7 +201,7 @@ jobject create_bitmap_proxy(JNIEnv *env, void *bitmap,
             native_ptr, &bitmap_obj_weak_ref, &android_bitmap_info,
             save_path_ref, stack_global_ref,
             current_scene_global_ref, restore_succeed);
-
+    if (save_to_local && restore_succeed) env->CallStaticVoidMethod(g_ctx.bitmap_monitor_jclass, g_ctx.report_bitmap_file_method, save_path_ref);
     return bitmap_obj;
 }
 
@@ -384,6 +384,9 @@ jint do_hook_bitmap(long bitmap_recycle_check_interval,
             g_ctx.report_bitmap_data_method = jni_env->GetStaticMethodID(g_ctx.bitmap_monitor_jclass,
                                                                         "reportBitmapInfo",
                                                                         "(Ltop/shixinzhang/bitmapmonitor/BitmapMonitorData;)V");
+            g_ctx.report_bitmap_file_method = jni_env->GetStaticMethodID(g_ctx.bitmap_monitor_jclass,
+                                                                         "reportBitmapFile",
+                                                                         "(Ljava/lang/String;)V");
 
         }
 

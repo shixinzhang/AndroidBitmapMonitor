@@ -4,6 +4,10 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application>
+        <provider
+            android:name=".internal.BitmapMonitorProvider"
+            android:authorities="${applicationId}.bitmap-monitor"
+            android:exported="false" />
         <activity android:label="BitmapRecordList" android:name=".ui.BitmapRecordsActivity" android:launchMode="singleTask"/>
         <activity android:label="BitmapRecordDetail" android:name=".ui.BitmapRecordDetailActivity" android:launchMode="singleTask"/>
         <service android:name=".ui.FloatWindowService"/>
