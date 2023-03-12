@@ -221,8 +221,8 @@ Here we understand the core API of Android Bitmap Monitor, through this library 
 
 ## Contributed by
 
-shixinzhang
-yibaoshan
+1. [shixinzhang](https://about.me/shixinzhang)
+2. [yibaoshan](https://github.com/yibaoshan)
 
 ## Thanks
 
@@ -238,4 +238,4 @@ yibaoshan
 
 ## License
 
-Android Bitmap Monitor is licensed under Apache 2.0
+Android Bitmap Monitor is licensed under Apache 2.0.
