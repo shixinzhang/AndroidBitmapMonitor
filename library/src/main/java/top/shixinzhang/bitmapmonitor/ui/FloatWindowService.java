@@ -102,7 +102,7 @@ public class FloatWindowService extends Service implements BitmapMonitor.BitmapI
 
         removeView();
 
-        floatView = LayoutInflater.from(this).inflate(R.layout.layout_float_window, null);
+        floatView = LayoutInflater.from(this).inflate(R.layout.layout_bitmap_float_window, null);
 
         bitmapCountTextView = floatView.findViewById(R.id.tv_bitmap_count);
         memoryUsageTextView = floatView.findViewById(R.id.tv_bitmap_memory_usage);
