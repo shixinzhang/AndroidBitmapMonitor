@@ -48,7 +48,6 @@ public class BitmapFileWatcher {
         mFileWatcherExecutor = new ThreadPoolExecutor(0, 1,
                 100L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(1), Executors.defaultThreadFactory(), new ThreadPoolExecutor.DiscardOldestPolicy());
-        mFileWatcherExecutor.execute(BitmapFileWatcher::loadAllFileToMemory);
     }
 
     /**
@@ -64,6 +63,7 @@ public class BitmapFileWatcher {
 
     /**
      * 根据配置，决定是每次重启就删除之前的文件，还是在运行时超出后就删除
+     *
      * @param bmpRootPath
      * @param clearAllFileWhenRestartApp
      * @param clearFileWhenOutOfThreshold
@@ -83,6 +83,7 @@ public class BitmapFileWatcher {
                 deleteDir(file);
             }
         }
+        mFileWatcherExecutor.execute(BitmapFileWatcher::loadAllFileToMemory);
     }
 
     public static void startWatch(String path) {
@@ -107,8 +108,10 @@ public class BitmapFileWatcher {
             File[] files = rootPath.listFiles();
             if (files == null) return;
 
-            // collects total file size to determine whether to delete files
+            mAllFiles.clear();
             mUsedTotalSize = 0;
+
+            // collects total file size to determine whether to delete files
             for (File file : files) mUsedTotalSize += file.length();
 
             mAllFiles.addAll(Arrays.asList(files));
