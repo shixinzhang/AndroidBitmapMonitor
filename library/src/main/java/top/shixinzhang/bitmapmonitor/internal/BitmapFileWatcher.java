@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -123,10 +124,17 @@ public class BitmapFileWatcher {
         synchronized (LOCK) {
             // sort by last change time, oldest files will be deleted
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                mAllFiles.sort((file, t1) -> {
-                    if (file.lastModified() > t1.lastModified()) return 1;
-                    else if (file.lastModified() < t1.lastModified()) return -1;
-                    return 0;
+                HashMap<File, Long> fileByTime = new HashMap<>();
+                mAllFiles.sort((file1, file2) -> {
+                    Long t1 = fileByTime.get(file1);
+                    Long t2 = fileByTime.get(file2);
+                    if (t1 == null) {
+                        fileByTime.put(file1, t1 = file1.lastModified());
+                    }
+                    if (t2 == null) {
+                        fileByTime.put(file2, t2 = file2.lastModified());
+                    }
+                    return t1.compareTo(t2);
                 });
             }
             // deleting files
